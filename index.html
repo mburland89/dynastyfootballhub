@@ -44,9 +44,11 @@ a{text-decoration:none;color:inherit}
 .ep-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:1rem}
 .ep-card{background:#161616;border:1px solid #1e1e1e;border-radius:10px;overflow:hidden;cursor:pointer;transition:border-color 0.2s,transform 0.2s;display:block}
 .ep-card:hover{border-color:#c0392b;transform:translateY(-2px)}
-.ep-thumb{background:#140303;height:160px;display:flex;align-items:center;justify-content:center;position:relative}
-.ep-badge{position:absolute;top:10px;left:10px;background:#c0392b;color:#fff;font-size:10px;font-weight:700;padding:3px 9px;border-radius:4px;letter-spacing:0.5px;text-transform:uppercase}
-.ep-play{width:56px;height:56px;background:rgba(192,57,43,0.15);border:2px solid rgba(192,57,43,0.5);border-radius:50%;display:flex;align-items:center;justify-content:center}
+.ep-thumb{height:160px;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;background:#140303}
+.ep-thumb img.thumb{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0.85}
+.ep-thumb::after{content:'';position:absolute;inset:0;background:rgba(0,0,0,0.35)}
+.ep-badge{position:absolute;top:10px;left:10px;background:#c0392b;color:#fff;font-size:10px;font-weight:700;padding:3px 9px;border-radius:4px;letter-spacing:0.5px;text-transform:uppercase;z-index:1}
+.ep-play{width:56px;height:56px;background:rgba(192,57,43,0.15);border:2px solid rgba(192,57,43,0.5);border-radius:50%;display:flex;align-items:center;justify-content:center;z-index:1}
 .ep-play svg{width:20px;height:20px;fill:#c0392b;margin-left:3px}
 .ep-body{padding:16px}
 .ep-title{font-size:14px;font-weight:600;color:#f0f0f0;line-height:1.5;margin-bottom:6px}
@@ -194,15 +196,15 @@ a{text-decoration:none;color:inherit}
     </div>
     <div class="ep-grid">
       <a class="ep-card" href="https://www.youtube.com/watch?v=1jS3jJIaZ1c" target="_blank">
-        <div class="ep-thumb"><div class="ep-badge">New</div><div class="ep-play"><svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg></div></div>
+        <div class="ep-thumb" style="background-image:url('https://img.youtube.com/vi/1jS3jJIaZ1c/mqdefault.jpg')"><img class="thumb" src="https://img.youtube.com/vi/1jS3jJIaZ1c/mqdefault.jpg" referrerpolicy="no-referrer" alt="" /><div class="ep-badge">New</div><div class="ep-play"><svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg></div></div>
         <div class="ep-body"><div class="ep-title">Where Are These Players Valued RIGHT NOW?</div><div class="ep-meta">Latest Episode</div></div>
       </a>
       <a class="ep-card" href="https://www.youtube.com/watch?v=vMldrZCxaB8" target="_blank">
-        <div class="ep-thumb"><div class="ep-play"><svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg></div></div>
+        <div class="ep-thumb" style="background-image:url('https://img.youtube.com/vi/vMldrZCxaB8/mqdefault.jpg')"><img class="thumb" src="https://img.youtube.com/vi/vMldrZCxaB8/mqdefault.jpg" referrerpolicy="no-referrer" alt="" /><div class="ep-play"><svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg></div></div>
         <div class="ep-body"><div class="ep-title">You're Probably Not Stashing These Players...</div><div class="ep-meta">Previous Episode</div></div>
       </a>
       <a class="ep-card" href="https://www.youtube.com/watch?v=nAQqLvWaNac" target="_blank">
-        <div class="ep-thumb"><div class="ep-play"><svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg></div></div>
+        <div class="ep-thumb" style="background-image:url('https://img.youtube.com/vi/nAQqLvWaNac/mqdefault.jpg')"><img class="thumb" src="https://img.youtube.com/vi/nAQqLvWaNac/mqdefault.jpg" referrerpolicy="no-referrer" alt="" /><div class="ep-play"><svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg></div></div>
         <div class="ep-body"><div class="ep-title">This Rookie Could Be a Dynasty STEAL</div><div class="ep-meta">Previous Episode</div></div>
       </a>
     </div>
@@ -231,12 +233,12 @@ a{text-decoration:none;color:inherit}
       <p>Dynasty strategy, player analysis, rankings breakdowns and more — every week on YouTube.</p>
     </div>
     <div class="ep-grid">
-      <a class="ep-card" href="https://www.youtube.com/watch?v=1jS3jJIaZ1c" target="_blank"><div class="ep-thumb"><div class="ep-badge">New</div><div class="ep-play"><svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg></div></div><div class="ep-body"><div class="ep-title">Where Are These Players Valued RIGHT NOW?</div><div class="ep-meta">Latest Episode</div></div></a>
-      <a class="ep-card" href="https://www.youtube.com/watch?v=vMldrZCxaB8" target="_blank"><div class="ep-thumb"><div class="ep-play"><svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg></div></div><div class="ep-body"><div class="ep-title">You're Probably Not Stashing These Players...</div><div class="ep-meta">Previous Episode</div></div></a>
-      <a class="ep-card" href="https://www.youtube.com/watch?v=nAQqLvWaNac" target="_blank"><div class="ep-thumb"><div class="ep-play"><svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg></div></div><div class="ep-body"><div class="ep-title">This Rookie Could Be a Dynasty STEAL</div><div class="ep-meta">Previous Episode</div></div></a>
-      <a class="ep-card" href="https://www.youtube.com/watch?v=tb8dENcE6SQ" target="_blank"><div class="ep-thumb"><div class="ep-play"><svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg></div></div><div class="ep-body"><div class="ep-title">These Dynasty Rankings Make No Sense</div><div class="ep-meta">Previous Episode</div></div></a>
-      <a class="ep-card" href="https://www.youtube.com/watch?v=ayX5Ph0-yhY" target="_blank"><div class="ep-thumb"><div class="ep-play"><svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg></div></div><div class="ep-body"><div class="ep-title">Rookies Who Will Break Out in Year 1 (2026 Dynasty)</div><div class="ep-meta">Previous Episode</div></div></a>
-      <a class="ep-card" href="https://www.youtube.com/watch?v=8LQfoCGMu8k" target="_blank"><div class="ep-thumb"><div class="ep-play"><svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg></div></div><div class="ep-body"><div class="ep-title">Dynasty Players Trending Up Before It's Too Late</div><div class="ep-meta">Previous Episode</div></div></a>
+      <a class="ep-card" href="https://www.youtube.com/watch?v=1jS3jJIaZ1c" target="_blank"><div class="ep-thumb"><img class="thumb" src="https://img.youtube.com/vi/1jS3jJIaZ1c/mqdefault.jpg" referrerpolicy="no-referrer" alt="" /><div class="ep-badge">New</div><div class="ep-play"><svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg></div></div><div class="ep-body"><div class="ep-title">Where Are These Players Valued RIGHT NOW?</div><div class="ep-meta">Latest Episode</div></div></a>
+      <a class="ep-card" href="https://www.youtube.com/watch?v=vMldrZCxaB8" target="_blank"><div class="ep-thumb"><img class="thumb" src="https://img.youtube.com/vi/vMldrZCxaB8/mqdefault.jpg" referrerpolicy="no-referrer" alt="" /><div class="ep-play"><svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg></div></div><div class="ep-body"><div class="ep-title">You're Probably Not Stashing These Players...</div><div class="ep-meta">Previous Episode</div></div></a>
+      <a class="ep-card" href="https://www.youtube.com/watch?v=nAQqLvWaNac" target="_blank"><div class="ep-thumb"><img class="thumb" src="https://img.youtube.com/vi/nAQqLvWaNac/mqdefault.jpg" referrerpolicy="no-referrer" alt="" /><div class="ep-play"><svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg></div></div><div class="ep-body"><div class="ep-title">This Rookie Could Be a Dynasty STEAL</div><div class="ep-meta">Previous Episode</div></div></a>
+      <a class="ep-card" href="https://www.youtube.com/watch?v=tb8dENcE6SQ" target="_blank"><div class="ep-thumb"><img class="thumb" src="https://img.youtube.com/vi/tb8dENcE6SQ/mqdefault.jpg" referrerpolicy="no-referrer" alt="" /><div class="ep-play"><svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg></div></div><div class="ep-body"><div class="ep-title">These Dynasty Rankings Make No Sense</div><div class="ep-meta">Previous Episode</div></div></a>
+      <a class="ep-card" href="https://www.youtube.com/watch?v=ayX5Ph0-yhY" target="_blank"><div class="ep-thumb"><img class="thumb" src="https://img.youtube.com/vi/ayX5Ph0-yhY/mqdefault.jpg" referrerpolicy="no-referrer" alt="" /><div class="ep-play"><svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg></div></div><div class="ep-body"><div class="ep-title">Rookies Who Will Break Out in Year 1 (2026 Dynasty)</div><div class="ep-meta">Previous Episode</div></div></a>
+      <a class="ep-card" href="https://www.youtube.com/watch?v=8LQfoCGMu8k" target="_blank"><div class="ep-thumb"><img class="thumb" src="https://img.youtube.com/vi/8LQfoCGMu8k/mqdefault.jpg" referrerpolicy="no-referrer" alt="" /><div class="ep-play"><svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg></div></div><div class="ep-body"><div class="ep-title">Dynasty Players Trending Up Before It's Too Late</div><div class="ep-meta">Previous Episode</div></div></a>
     </div>
   </div>
 </div>

@@ -194,19 +194,9 @@ a{text-decoration:none;color:inherit}
       <div class="sec-title">Latest Episodes</div>
       <a class="see-all" onclick="showPage('episodes')">View all &rarr;</a>
     </div>
-    <div class="ep-grid">
-      <a class="ep-card" href="https://www.youtube.com/watch?v=8LQfoCGMu8k" target="_blank">
-        <div class="ep-thumb" style="background-image:url('https://img.youtube.com/vi/8LQfoCGMu8k/mqdefault.jpg')"><img class="thumb" src="https://img.youtube.com/vi/8LQfoCGMu8k/mqdefault.jpg" referrerpolicy="no-referrer" alt="" /><div class="ep-badge">New</div><div class="ep-play"><svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg></div></div>
-        <div class="ep-body"><div class="ep-title">Dynasty Players Trending Up Before It's Too Late</div><div class="ep-meta">Latest Episode</div></div>
-      </a>
-      <a class="ep-card" href="https://www.youtube.com/watch?v=ayX5Ph0-yhY" target="_blank">
-        <div class="ep-thumb" style="background-image:url('https://img.youtube.com/vi/ayX5Ph0-yhY/mqdefault.jpg')"><img class="thumb" src="https://img.youtube.com/vi/ayX5Ph0-yhY/mqdefault.jpg" referrerpolicy="no-referrer" alt="" /><div class="ep-play"><svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg></div></div>
-        <div class="ep-body"><div class="ep-title">Rookies Who Will Break Out in Year 1 (2026 Dynasty)</div><div class="ep-meta">Previous Episode</div></div>
-      </a>
-      <a class="ep-card" href="https://www.youtube.com/watch?v=tb8dENcE6SQ" target="_blank">
-        <div class="ep-thumb" style="background-image:url('https://img.youtube.com/vi/tb8dENcE6SQ/mqdefault.jpg')"><img class="thumb" src="https://img.youtube.com/vi/tb8dENcE6SQ/mqdefault.jpg" referrerpolicy="no-referrer" alt="" /><div class="ep-play"><svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg></div></div>
-        <div class="ep-body"><div class="ep-title">These Dynasty Rankings Make No Sense</div><div class="ep-meta">Previous Episode</div></div>
-      </a>
+    <div class="ep-grid" id="home-episodes-grid">
+      <div style="color:#555;font-size:14px;padding:2rem 0">Loading episodes...</div>
+    </div>
     </div>
   </div>
   <hr class="divider" />
@@ -232,13 +222,8 @@ a{text-decoration:none;color:inherit}
       <h2>All Episodes</h2>
       <p>Dynasty strategy, player analysis, rankings breakdowns and more — every week on YouTube.</p>
     </div>
-    <div class="ep-grid">
-      <a class="ep-card" href="https://www.youtube.com/watch?v=8LQfoCGMu8k" target="_blank"><div class="ep-thumb"><img class="thumb" src="https://img.youtube.com/vi/8LQfoCGMu8k/mqdefault.jpg" referrerpolicy="no-referrer" alt="" /><div class="ep-badge">New</div><div class="ep-play"><svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg></div></div><div class="ep-body"><div class="ep-title">Dynasty Players Trending Up Before It's Too Late</div><div class="ep-meta">Latest Episode</div></div></a>
-      <a class="ep-card" href="https://www.youtube.com/watch?v=ayX5Ph0-yhY" target="_blank"><div class="ep-thumb"><img class="thumb" src="https://img.youtube.com/vi/ayX5Ph0-yhY/mqdefault.jpg" referrerpolicy="no-referrer" alt="" /><div class="ep-play"><svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg></div></div><div class="ep-body"><div class="ep-title">Rookies Who Will Break Out in Year 1 (2026 Dynasty)</div><div class="ep-meta">Previous Episode</div></div></a>
-      <a class="ep-card" href="https://www.youtube.com/watch?v=tb8dENcE6SQ" target="_blank"><div class="ep-thumb"><img class="thumb" src="https://img.youtube.com/vi/tb8dENcE6SQ/mqdefault.jpg" referrerpolicy="no-referrer" alt="" /><div class="ep-play"><svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg></div></div><div class="ep-body"><div class="ep-title">These Dynasty Rankings Make No Sense</div><div class="ep-meta">Previous Episode</div></div></a>
-      <a class="ep-card" href="https://www.youtube.com/watch?v=nAQqLvWaNac" target="_blank"><div class="ep-thumb"><img class="thumb" src="https://img.youtube.com/vi/nAQqLvWaNac/mqdefault.jpg" referrerpolicy="no-referrer" alt="" /><div class="ep-play"><svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg></div></div><div class="ep-body"><div class="ep-title">This Rookie Could Be a Dynasty STEAL</div><div class="ep-meta">Previous Episode</div></div></a>
-      <a class="ep-card" href="https://www.youtube.com/watch?v=vMldrZCxaB8" target="_blank"><div class="ep-thumb"><img class="thumb" src="https://img.youtube.com/vi/vMldrZCxaB8/mqdefault.jpg" referrerpolicy="no-referrer" alt="" /><div class="ep-play"><svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg></div></div><div class="ep-body"><div class="ep-title">You're Probably Not Stashing These Players...</div><div class="ep-meta">Previous Episode</div></div></a>
-      <a class="ep-card" href="https://www.youtube.com/watch?v=1jS3jJIaZ1c" target="_blank"><div class="ep-thumb"><img class="thumb" src="https://img.youtube.com/vi/1jS3jJIaZ1c/mqdefault.jpg" referrerpolicy="no-referrer" alt="" /><div class="ep-play"><svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg></div></div><div class="ep-body"><div class="ep-title">Where Are These Players Valued RIGHT NOW?</div><div class="ep-meta">Previous Episode</div></div></a>
+    <div class="ep-grid" id="all-episodes-grid">
+      <div style="color:#555;font-size:14px;padding:2rem 0">Loading episodes...</div>
     </div>
   </div>
 </div>
@@ -395,6 +380,46 @@ function toggleDiverge(){divergeOnly=!divergeOnly;document.getElementById('diver
 function renderTable(){const q=document.getElementById('search-input').value.toLowerCase();let list=[...players];if(cfg.rk==='sep')list=list.filter(p=>!p.rookie);if(currentTab!=='all')list=list.filter(p=>p.pos===currentTab);if(q)list=list.filter(p=>p.name.toLowerCase().includes(q)||p.team.toLowerCase().includes(q));list.sort((a,b)=>getScore(b)-getScore(a));list.forEach((p,i)=>p._r=i+1);if(divergeOnly)list=list.filter(p=>p.ktc!==null&&Math.abs(p._r-p.ktc)>5);document.getElementById('results-count').textContent=`${list.length} player${list.length!==1?'s':''}`;if(!list.length){document.getElementById('rankings-table').innerHTML=`<div class="empty-state">${divergeOnly?'No major divergences with current filters':'No players found'}</div>`;return;}const tc={};list.forEach(p=>{const t=getTier(getScore(p));tc[t]=(tc[t]||0)+1;});let html=`<div class="rt-head"><span>Rank</span><span>Player</span><span>Pos</span><span>Age</span><span>Tag</span><span>KTC</span><span>vs KTC</span></div>`;let lastTier=null;const rc=['gold','silver','bronze'];list.forEach((p,i)=>{const s=getScore(p),tier=getTier(s);if(tier!==lastTier&&!divergeOnly){html+=`<div class="tier-header"><span class="tier-name">${tier}</span><div class="tier-line"></div><span class="tier-count">${tc[tier]} players</span></div>`;lastTier=tier;}let diffHtml=`<span class="ktc-diff ktc-na">—</span>`;if(p.ktc!==null){const d=p.ktc-p._r;diffHtml=Math.abs(d)<=5?`<span class="ktc-diff ktc-eq">~</span>`:d>0?`<span class="ktc-diff ktc-up">&#9650; ${d}</span>`:`<span class="ktc-diff ktc-dn">&#9660; ${Math.abs(d)}</span>`;}const ktcHtml=p.ktc?`<span style="font-size:13px;color:#666;display:block;text-align:center">${p.ktc}</span>`:`<span style="font-size:13px;color:#333;display:block;text-align:center">—</span>`;const rb=p.rookie&&cfg.rk==='inc'?`<span class="tag-badge tag-R">R</span>`:'';const tb=p.tag?`<span class="tag-badge tag-${p.tag}">${p.tag}</span>`:'';const isDiv=p.ktc&&Math.abs(p._r-p.ktc)>5;html+=`<div class="rt-row ${isDiv?'hi':''}"><div class="rt-rank ${rc[i]||''}">${p._r}</div><div class="rt-player"><span class="rt-name">${p.name} ${rb}</span><span class="rt-team">${p.team}</span></div><div style="text-align:center"><span class="pos-badge pos-${p.pos}">${p.pos}</span></div><div class="rt-age">${p.age}</div><div style="text-align:center">${tb}</div><div>${ktcHtml}</div><div>${diffHtml}</div></div>`;});document.getElementById('rankings-table').innerHTML=html;}
 function showPage(p){document.querySelectorAll('.page').forEach(e=>e.classList.remove('active'));document.getElementById(`page-${p}`).classList.add('active');document.querySelectorAll('.nav-links a').forEach(e=>e.classList.remove('active'));const n=document.getElementById(`nav-${p}`);if(n)n.classList.add('active');if(p==='rankings')renderTable();window.scrollTo(0,0);}
 renderTable();
+</script>
+<script>
+const YT_API_KEY = 'AIzaSyCxaLpiBlm2Abnsv3z5ol1iGZP0q9KoIzo';
+const YT_CHANNEL_ID = 'UCiCzmfphi0LFimECbgcWlqw';
+const PLAY_ICON = '<svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>';
+
+function buildEpCard(video, index, showBadge) {
+  const id = video.id.videoId;
+  const title = video.snippet.title;
+  const thumb = `https://img.youtube.com/vi/${id}/mqdefault.jpg`;
+  const badge = (showBadge && index === 0) ? '<div class="ep-badge">New</div>' : '';
+  const meta = index === 0 ? 'Latest Episode' : 'Previous Episode';
+  return `<a class="ep-card" href="https://www.youtube.com/watch?v=${id}" target="_blank">
+    <div class="ep-thumb"><img class="thumb" src="${thumb}" referrerpolicy="no-referrer" alt="" />${badge}<div class="ep-play">${PLAY_ICON}</div></div>
+    <div class="ep-body"><div class="ep-title">${title}</div><div class="ep-meta">${meta}</div></div>
+  </a>`;
+}
+
+async function loadYouTubeVideos() {
+  try {
+    const url = `https://www.googleapis.com/youtube/v3/search?key=${YT_API_KEY}&channelId=${YT_CHANNEL_ID}&part=snippet&order=date&type=video&maxResults=12`;
+    const res = await fetch(url);
+    const data = await res.json();
+    if (!data.items || data.items.length === 0) return;
+
+    const homeGrid = document.getElementById('home-episodes-grid');
+    const allGrid = document.getElementById('all-episodes-grid');
+
+    if (homeGrid) {
+      homeGrid.innerHTML = data.items.slice(0, 3).map((v, i) => buildEpCard(v, i, true)).join('');
+    }
+    if (allGrid) {
+      allGrid.innerHTML = data.items.map((v, i) => buildEpCard(v, i, true)).join('');
+    }
+  } catch(e) {
+    console.log('YouTube API error:', e);
+  }
+}
+
+loadYouTubeVideos();
 </script>
 </body>
 </html>

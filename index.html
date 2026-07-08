@@ -350,6 +350,19 @@ const cfg = {qb:'sf', sc:'ppr', tep:'off', rk:'inc'};
 let currentTab = 'all', divergeOnly = false;
 let players = [];
 
+function parseCSVRow(row) {
+  const cols = [];
+  let cur = '', inQ = false;
+  for (let i = 0; i < row.length; i++) {
+    const c = row[i];
+    if (c === '"') { inQ = !inQ; }
+    else if (c === ',' && !inQ) { cols.push(cur.trim()); cur = ''; }
+    else { cur += c; }
+  }
+  cols.push(cur.trim());
+  return cols;
+}
+
 async function loadSheet() {
   document.getElementById('rankings-table').innerHTML = '<div class="empty-state">Loading rankings...</div>';
   try {
@@ -357,25 +370,26 @@ async function loadSheet() {
     const text = await res.text();
     const rows = text.trim().split('\n').slice(1);
     players = rows.map(row => {
-      const cols = row.split(',');
+      const cols = parseCSVRow(row);
       return {
-        name:    cols[0]?.trim() || '',
-        team:    cols[1]?.trim() || '',
-        pos:     cols[2]?.trim() || '',
-        age:     cols[3]?.trim() || '',
-        sf:      parseInt(cols[4]) || 0,
-        oqb:     parseInt(cols[5]) || 0,
-        tep1:    parseInt(cols[6]) || 0,
-        tep2:    parseInt(cols[7]) || 0,
-        tep3:    parseInt(cols[8]) || 0,
-        ktc:     parseInt(cols[9]) || null,
-        tag:     cols[10]?.trim() || '',
-        rookie:  (cols[11]?.trim().toUpperCase() === 'YES'),
+        name:   cols[0] || '',
+        team:   cols[1] || '',
+        pos:    cols[2] || '',
+        age:    cols[3] || '',
+        sf:     parseInt(cols[4]) || 0,
+        oqb:    parseInt(cols[5]) || 0,
+        tep1:   parseInt(cols[6]) || 0,
+        tep2:   parseInt(cols[7]) || 0,
+        tep3:   parseInt(cols[8]) || 0,
+        ktc:    parseInt(cols[9]) || null,
+        tag:    cols[10] || '',
+        rookie: (cols[11] || '').toUpperCase().trim() === 'YES',
       };
     }).filter(p => p.name && p.sf > 0);
     renderTable();
   } catch(e) {
     document.getElementById('rankings-table').innerHTML = '<div class="empty-state">Could not load rankings. Please try again later.</div>';
+    console.error(e);
   }
 }
 
@@ -483,6 +497,7 @@ function showPage(p) {
   window.scrollTo(0, 0);
 }
 </script>
+<script>
 const YT_API_KEY = 'AIzaSyCxaLpiBlm2Abnsv3z5ol1iGZP0q9KoIzo';
 const YT_CHANNEL_ID = 'UCiCzmfphi0LFimECbgcWlqw';
 const PLAY_ICON = '<svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>';

@@ -83,10 +83,10 @@ a{text-decoration:none;color:inherit}
 .search-icon{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:#444;font-size:14px}
 
 .war-table{border-radius:10px;overflow:hidden;border:1px solid #1e1e1e}
-.war-head{display:grid;grid-template-columns:50px 1fr 70px 80px 80px 80px 80px 90px;padding:9px 16px;background:#181818;border-bottom:1px solid #1e1e1e}
+.war-head{display:grid;grid-template-columns:50px 1fr 70px 70px 70px 70px 80px 80px 90px;padding:9px 16px;background:#181818;border-bottom:1px solid #1e1e1e}
 .war-head span{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.7px;color:#444}
 .war-head span:nth-child(n+3){text-align:center}
-.war-row{display:grid;grid-template-columns:50px 1fr 70px 80px 80px 80px 80px 90px;padding:11px 16px;border-bottom:1px solid #111;align-items:center;transition:background 0.1s}
+.war-row{display:grid;grid-template-columns:50px 1fr 70px 70px 70px 70px 80px 80px 90px;padding:11px 16px;border-bottom:1px solid #111;align-items:center;transition:background 0.1s}
 .war-row:last-child{border-bottom:none}
 .war-row:hover{background:#111}
 
@@ -149,7 +149,7 @@ a{text-decoration:none;color:inherit}
 <div class="main">
 
   <div class="disclaimer">
-    <strong>How it works:</strong> Enter your Sleeper username, select your league, and the tool automatically reads your scoring settings, roster configuration, and 2025 season stats. WAR = how many wins above a replacement-level player each player provided in your exact league format. Higher WAR = more valuable in your specific league.
+    <strong>WAR</strong> — how much a player outscored the replacement-level player at their position in your exact league settings. Higher = more dominant at their position. &nbsp;|&nbsp; <strong>VF Score</strong> — cross-positional value normalized for scarcity. 50 = league average, 60+ = elite, 70+ = historic. Accounts for how scarce elite production is at each position — a TE1 who dominates may score higher than an RB1 who has more competition behind them.
   </div>
 
   <!-- STEP 1: Username -->
@@ -377,35 +377,85 @@ async function calculateWAR() {
     btn.innerHTML = '<span class="loading-spinner"></span>Fetching player data...';
     const playersRes = await fetch('https://api.sleeper.app/v1/players/nfl');
     sleeperPlayers = await playersRes.json();
-    btn.innerHTML = '<span class="loading-spinner"></span>Loading 2025 stats...';
-    const statsRes = await fetch('https://api.sleeper.com/stats/nfl/2025?season_type=regular&position[]=QB&position[]=RB&position[]=WR&position[]=TE&order_by=pts_ppr');
-    const statsArray = await statsRes.json();
+
+    // Pull points directly from league matchups — most accurate approach
+    // Sleeper already calculated exact points in your scoring system
+    btn.innerHTML = '<span class="loading-spinner"></span>Loading league matchups...';
+    
+    const leagueId = selectedLeague.league_id;
+    const totalWeeks = selectedLeague.settings?.playoff_week_start - 1 || 17;
+    
+    // Fetch all weeks in parallel
+    const weekPromises = [];
+    for (let week = 1; week <= totalWeeks; week++) {
+      weekPromises.push(
+        fetch(`https://api.sleeper.app/v1/league/${leagueId}/matchups/${week}`)
+          .then(r => r.json())
+          .catch(() => [])
+      );
+    }
+    const allWeeks = await Promise.all(weekPromises);
 
     btn.innerHTML = '<span class="loading-spinner"></span>Calculating WAR...';
-    
-    // Calculate fantasy points for each player
+
+    // Aggregate player points across all weeks
+    const playerPoints = {}; // playerId -> total pts
+    const playerStats = {};  // playerId -> aggregated stats
+
+    allWeeks.forEach(weekData => {
+      if (!Array.isArray(weekData)) return;
+      weekData.forEach(matchup => {
+        const points = matchup.players_points || {};
+        const stats = matchup.players || [];
+        
+        Object.entries(points).forEach(([playerId, pts]) => {
+          if (!playerPoints[playerId]) playerPoints[playerId] = 0;
+          playerPoints[playerId] += pts;
+        });
+      });
+    });
+
+    // Also fetch weekly stats to get raw stat lines (rec, rush_yd etc)
+    // Use the new stats endpoint per player would be too many calls
+    // Instead fetch season stats from sleeper stats endpoint as supplement
+    let seasonStats = {};
+    try {
+      const statsRes = await fetch('https://api.sleeper.com/stats/nfl/2025?season_type=regular&position[]=QB&position[]=RB&position[]=WR&position[]=TE');
+      const statsArr = await statsRes.json();
+      if (Array.isArray(statsArr)) {
+        statsArr.forEach(p => {
+          if (p.player_id) seasonStats[p.player_id] = p.stats || {};
+        });
+      }
+    } catch(e) {
+      // Stats supplement failed — we'll show 0 for raw stats but points will still be accurate
+    }
+
+    // Build player WAR array using matchup points (most accurate)
     const playerWAR = [];
-    
-    for (const playerStats of statsArray) {
-      const playerId = playerStats.player_id;
+
+    Object.entries(playerPoints).forEach(([playerId, pts]) => {
       const info = sleeperPlayers[playerId];
-      if (!info) continue;
+      if (!info) return;
       
       const pos = info.position;
-      if (!['QB','RB','WR','TE'].includes(pos)) continue;
+      if (!['QB','RB','WR','TE'].includes(pos)) return;
+      if (pts < 5) return; // filter truly inactive players
       
-      const stats = playerStats.stats || {};
-      const pts = calcFantasyPoints(stats, pos);
-      if (pts < 10) continue;
+      const rawStats = seasonStats[playerId] || {};
       
       playerWAR.push({
         id: playerId,
         name: `${info.first_name} ${info.last_name}`,
         team: info.team || 'FA',
         pos,
-        pts,
-        stats,
+        pts: parseFloat(pts.toFixed(1)),
+        stats: rawStats,
       });
+    });
+
+    if (playerWAR.length === 0) {
+      throw new Error('No player data found. This league may not have 2025 matchup data yet.');
     }
 
     // Calculate replacement level per position
@@ -416,21 +466,37 @@ async function calculateWAR() {
       p.war = parseFloat(((p.pts - replacementLevel[p.pos]) / 10).toFixed(2));
     });
 
-    // Sort by WAR
-    playerWAR.sort((a,b) => b.war - a.war);
+    // Calculate VF Score — positional scarcity normalized
+    const positions = ['QB','RB','WR','TE'];
+    const posStats = {};
+    positions.forEach(pos => {
+      const wars = playerWAR.filter(p => p.pos === pos && p.war > 0).map(p => p.war);
+      if (wars.length === 0) return;
+      const mean = wars.reduce((s,v) => s+v, 0) / wars.length;
+      const variance = wars.reduce((s,v) => s + Math.pow(v-mean,2), 0) / wars.length;
+      const std = Math.sqrt(variance);
+      posStats[pos] = { mean, std };
+    });
+
+    playerWAR.forEach(p => {
+      const { mean, std } = posStats[p.pos] || { mean: 0, std: 1 };
+      const z = std > 0 ? (p.war - mean) / std : 0;
+      p.vfScore = parseFloat((z * 10 + 50).toFixed(1));
+    });
+
+    playerWAR.sort((a,b) => b.vfScore - a.vfScore);
     warPlayers = playerWAR;
 
-    // Show results
     const leagueName = selectedLeague.name || 'Your League';
     document.getElementById('results-title').textContent = `2025 WAR Rankings`;
-    document.getElementById('results-subtitle').textContent = `${leagueName} · ${leagueSettings.teams} teams · Based on 2025 regular season stats`;
+    document.getElementById('results-subtitle').textContent = `${leagueName} · ${leagueSettings.teams} teams · Based on actual league scoring`;
     document.getElementById('results-section').style.display = 'block';
     renderWAR();
     document.getElementById('results-section').scrollIntoView({behavior:'smooth', block:'start'});
 
   } catch(e) {
     console.error(e);
-    alert('Could not load stats. The Sleeper API may be temporarily unavailable. Please try again.');
+    alert(e.message || 'Could not load stats. Please try again.');
   }
 
   btn.disabled = false;
@@ -506,6 +572,11 @@ function renderWAR() {
   let list = [...warPlayers];
   if (warTab !== 'all') list = list.filter(p => p.pos === warTab);
   if (q) list = list.filter(p => p.name.toLowerCase().includes(q) || p.team.toLowerCase().includes(q));
+  if (warTab === 'all') {
+    list.sort((a, b) => b.vfScore - a.vfScore);
+  } else {
+    list.sort((a, b) => b.war - a.war);
+  }
 
   if (!list.length) {
     document.getElementById('war-table').innerHTML = '<div class="empty-state">No players found</div>';
@@ -517,12 +588,13 @@ function renderWAR() {
 
   let html = `<div class="war-head">
     <span>Rank</span><span>Player</span><span>Pos</span>
-    <span>Pts</span><span>Rec</span><span>Rush Yds</span><span>WAR</span><span>Value</span>
+    <span>Pts</span><span>Rec</span><span>Rush Yds</span><span>WAR</span><span>VF Score</span><span>Value</span>
   </div>`;
 
   list.forEach((p, i) => {
     const barWidth = Math.round((Math.abs(p.war) / maxWAR) * 80);
     const isNeg = p.war < 0;
+    const vfColor = p.vfScore >= 60 ? '#68d391' : p.vfScore >= 50 ? '#f6ad55' : '#e24b4a';
     html += `<div class="war-row">
       <div class="war-rank ${rc[i]||''}">${i+1}</div>
       <div class="war-player">
@@ -534,6 +606,7 @@ function renderWAR() {
       <div class="stat-cell">${p.stats.rec || 0}</div>
       <div class="stat-cell">${p.stats.rush_yd || 0}</div>
       <div class="war-value ${isNeg?'war-negative':'war-positive'}">${p.war > 0 ? '+' : ''}${p.war}</div>
+      <div class="war-value" style="color:${vfColor}">${p.vfScore}</div>
       <div class="war-bar-wrap">
         <div class="war-bar ${isNeg?'neg':''}" style="width:${barWidth}px"></div>
       </div>

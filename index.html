@@ -384,6 +384,7 @@ async function loadSheet() {
         ktc:    parseInt(cols[9]) || null,
         tag:    (cols[10] || '').trim(),
         rookie: (cols[11] || '').toUpperCase().trim() === 'YES',
+        tier:   parseInt(cols[12]) || null,
       };
     }).filter(p => p.name && p.sf > 0);
     renderTable();
@@ -401,15 +402,17 @@ function getScore(p) {
   return s;
 }
 
-function getTier(s) {
-  if (s >= 9500) return 'Tier 1 — Elite';
-  if (s >= 8200) return 'Tier 2 — Franchise Cornerstones';
-  if (s >= 6100) return 'Tier 3 — Strong Starters';
-  if (s >= 4400) return 'Tier 4 — Solid Contributors';
-  if (s >= 2400) return 'Tier 5 — Depth & Upside';
-  if (s >= 1400) return 'Tier 6 — Roster Fillers';
-  if (s >= 800)  return 'Tier 7 — Deep Stashes';
-  return 'Tier 8 — Lottery Tickets';
+function getTier(p) {
+  if (p.tier) return `Tier ${p.tier}`;
+  const s = getScore(p);
+  if (s >= 9500) return 'Tier 1';
+  if (s >= 8200) return 'Tier 2';
+  if (s >= 6100) return 'Tier 3';
+  if (s >= 4400) return 'Tier 4';
+  if (s >= 2400) return 'Tier 5';
+  if (s >= 1400) return 'Tier 6';
+  if (s >= 800)  return 'Tier 7';
+  return 'Tier 8';
 }
 
 function setSetting(k, v) {
@@ -465,12 +468,12 @@ function renderTable() {
     return;
   }
   const tc = {};
-  list.forEach(p => { const t = getTier(getScore(p)); tc[t] = (tc[t] || 0) + 1; });
+  list.forEach(p => { const t = getTier(p); tc[t] = (tc[t] || 0) + 1; });
   let html = `<div class="rt-head"><span>Rank</span><span>Player</span><span>Pos</span><span>Age</span><span>Tag</span><span>KTC</span><span>vs KTC</span></div>`;
   let lastTier = null;
   const rc = ['gold', 'silver', 'bronze'];
   list.forEach((p, i) => {
-    const s = getScore(p), tier = getTier(s);
+    const s = getScore(p), tier = getTier(p);
     if (tier !== lastTier && !divergeOnly) {
       html += `<div class="tier-header"><span class="tier-name">${tier}</span><div class="tier-line"></div><span class="tier-count">${tc[tier]} players</span></div>`;
       lastTier = tier;

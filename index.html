@@ -246,7 +246,7 @@ a{text-decoration:none;color:inherit}
           <div class="sheet-dot"></div>
           <div class="sheet-label">Powered by <strong>Victory Formation Rankings Sheet</strong> — updates automatically</div>
         </div>
-        <div class="sheet-note">Connect your Google Sheet to go live</div>
+        <div class="sheet-note">Live — updates automatically when sheet is edited</div>
       </div>
       <div class="settings-bar">
         <div class="settings-row">
@@ -270,8 +270,10 @@ a{text-decoration:none;color:inherit}
           <div class="setting-group">
             <label>TE Premium</label>
             <div class="toggle-row">
-              <div class="tog" id="tep-on" onclick="setSetting('tep','on')">On</div>
               <div class="tog on" id="tep-off" onclick="setSetting('tep','off')">Off</div>
+              <div class="tog" id="tep-tep1" onclick="setSetting('tep','tep1')">+</div>
+              <div class="tog" id="tep-tep2" onclick="setSetting('tep','tep2')">++</div>
+              <div class="tog" id="tep-tep3" onclick="setSetting('tep','tep3')">+++</div>
             </div>
           </div>
           <div class="sdiv"></div>
@@ -343,45 +345,144 @@ a{text-decoration:none;color:inherit}
 </footer>
 
 <script>
-const cfg={qb:'sf',sc:'ppr',tep:'off',rk:'inc'};
-let currentTab='all',divergeOnly=false;
-const players=[
-  {name:"Ja'Marr Chase",team:"CIN",pos:"WR",age:25,sf:99,oqb:99,tepB:0,rookie:false,tag:"",ktc:1},
-  {name:"Justin Jefferson",team:"MIN",pos:"WR",age:25,sf:97,oqb:97,tepB:0,rookie:false,tag:"",ktc:3},
-  {name:"Bijan Robinson",team:"ATL",pos:"RB",age:23,sf:95,oqb:95,tepB:0,rookie:false,tag:"Buy",ktc:8},
-  {name:"Breece Hall",team:"NYJ",pos:"RB",age:23,sf:94,oqb:94,tepB:0,rookie:false,tag:"",ktc:6},
-  {name:"CJ Stroud",team:"HOU",pos:"QB",age:23,sf:93,oqb:78,tepB:0,rookie:false,tag:"Buy",ktc:18},
-  {name:"Malik Nabers",team:"NYG",pos:"WR",age:22,sf:92,oqb:92,tepB:0,rookie:false,tag:"",ktc:5},
-  {name:"Jayden Daniels",team:"WAS",pos:"QB",age:24,sf:91,oqb:76,tepB:0,rookie:false,tag:"",ktc:14},
-  {name:"Ashton Jeanty",team:"LV",pos:"RB",age:21,sf:90,oqb:90,tepB:0,rookie:true,tag:"Buy",ktc:4},
-  {name:"Travis Hunter",team:"JAC",pos:"WR",age:21,sf:89,oqb:89,tepB:0,rookie:true,tag:"",ktc:7},
-  {name:"Trey McBride",team:"ARI",pos:"TE",age:25,sf:87,oqb:87,tepB:8,rookie:false,tag:"",ktc:11},
-  {name:"Puka Nacua",team:"LAR",pos:"WR",age:24,sf:85,oqb:85,tepB:0,rookie:false,tag:"Hold",ktc:9},
-  {name:"Caleb Williams",team:"CHI",pos:"QB",age:23,sf:84,oqb:70,tepB:0,rookie:false,tag:"Hold",ktc:20},
-  {name:"Tetairoa McMillan",team:"CAR",pos:"WR",age:21,sf:83,oqb:83,tepB:0,rookie:true,tag:"Buy",ktc:10},
-  {name:"Travis Kelce",team:"KC",pos:"TE",age:35,sf:82,oqb:82,tepB:10,rookie:false,tag:"Sell",ktc:25},
-  {name:"Sam LaPorta",team:"DET",pos:"TE",age:23,sf:81,oqb:81,tepB:8,rookie:false,tag:"",ktc:19},
-  {name:"Omarion Hampton",team:"LAC",pos:"RB",age:21,sf:80,oqb:80,tepB:0,rookie:true,tag:"",ktc:13},
-  {name:"Drake London",team:"ATL",pos:"WR",age:23,sf:79,oqb:79,tepB:0,rookie:false,tag:"",ktc:16},
-  {name:"Tank Dell",team:"HOU",pos:"WR",age:24,sf:77,oqb:77,tepB:0,rookie:false,tag:"Buy",ktc:30},
-  {name:"Cam Ward",team:"TEN",pos:"QB",age:22,sf:75,oqb:62,tepB:0,rookie:true,tag:"",ktc:22},
-  {name:"Tyler Warren",team:"IND",pos:"TE",age:23,sf:73,oqb:73,tepB:9,rookie:true,tag:"Buy",ktc:35},
-  {name:"Jonathon Brooks",team:"CAR",pos:"RB",age:22,sf:70,oqb:70,tepB:0,rookie:false,tag:"Hold",ktc:17},
-  {name:"Rome Odunze",team:"CHI",pos:"WR",age:22,sf:68,oqb:68,tepB:0,rookie:false,tag:"",ktc:21},
-  {name:"Bo Nix",team:"DEN",pos:"QB",age:24,sf:66,oqb:54,tepB:0,rookie:false,tag:"Sell",ktc:28},
-  {name:"Evan Hull",team:"IND",pos:"RB",age:24,sf:63,oqb:63,tepB:0,rookie:false,tag:"",ktc:null}
-];
-function getScore(p){let s=cfg.qb==='sf'?p.sf:p.oqb;if(cfg.tep==='on')s+=p.tepB;if(cfg.sc==='std'){if(p.pos==='WR')s-=3;if(p.pos==='RB')s-=1;}if(cfg.sc==='half'){if(p.pos==='WR')s-=1;}return s;}
-function getTier(s){if(s>=90)return'Tier 1 — Elite';if(s>=80)return'Tier 2 — Franchise Cornerstones';if(s>=70)return'Tier 3 — Strong Starters';if(s>=60)return'Tier 4 — Depth & Upside';return'Tier 5 — Stash';}
-function setSetting(k,v){cfg[k]=v;document.querySelectorAll(`[id^="${k}-"]`).forEach(e=>e.classList.remove('on'));document.getElementById(`${k}-${v}`).classList.add('on');renderTable();}
-function setTab(t){currentTab=t;document.querySelectorAll('.pos-tab').forEach(e=>e.classList.remove('active'));document.getElementById(`tab-${t}`).classList.add('active');renderTable();}
-function setRtype(t){document.querySelectorAll('.rtype-tab').forEach(e=>e.classList.remove('active'));document.getElementById(`rtype-${t}`).classList.add('active');document.getElementById('overall-rankings').style.display=t==='overall'?'block':'none';document.getElementById('weekly-rankings').style.display=t==='weekly'?'block':'none';}
-function toggleDiverge(){divergeOnly=!divergeOnly;document.getElementById('diverge-btn').classList.toggle('on',divergeOnly);renderTable();}
-function renderTable(){const q=document.getElementById('search-input').value.toLowerCase();let list=[...players];if(cfg.rk==='sep')list=list.filter(p=>!p.rookie);if(currentTab!=='all')list=list.filter(p=>p.pos===currentTab);if(q)list=list.filter(p=>p.name.toLowerCase().includes(q)||p.team.toLowerCase().includes(q));list.sort((a,b)=>getScore(b)-getScore(a));list.forEach((p,i)=>p._r=i+1);if(divergeOnly)list=list.filter(p=>p.ktc!==null&&Math.abs(p._r-p.ktc)>5);document.getElementById('results-count').textContent=`${list.length} player${list.length!==1?'s':''}`;if(!list.length){document.getElementById('rankings-table').innerHTML=`<div class="empty-state">${divergeOnly?'No major divergences with current filters':'No players found'}</div>`;return;}const tc={};list.forEach(p=>{const t=getTier(getScore(p));tc[t]=(tc[t]||0)+1;});let html=`<div class="rt-head"><span>Rank</span><span>Player</span><span>Pos</span><span>Age</span><span>Tag</span><span>KTC</span><span>vs KTC</span></div>`;let lastTier=null;const rc=['gold','silver','bronze'];list.forEach((p,i)=>{const s=getScore(p),tier=getTier(s);if(tier!==lastTier&&!divergeOnly){html+=`<div class="tier-header"><span class="tier-name">${tier}</span><div class="tier-line"></div><span class="tier-count">${tc[tier]} players</span></div>`;lastTier=tier;}let diffHtml=`<span class="ktc-diff ktc-na">—</span>`;if(p.ktc!==null){const d=p.ktc-p._r;diffHtml=Math.abs(d)<=5?`<span class="ktc-diff ktc-eq">~</span>`:d>0?`<span class="ktc-diff ktc-up">&#9650; ${d}</span>`:`<span class="ktc-diff ktc-dn">&#9660; ${Math.abs(d)}</span>`;}const ktcHtml=p.ktc?`<span style="font-size:13px;color:#666;display:block;text-align:center">${p.ktc}</span>`:`<span style="font-size:13px;color:#333;display:block;text-align:center">—</span>`;const rb=p.rookie&&cfg.rk==='inc'?`<span class="tag-badge tag-R">R</span>`:'';const tb=p.tag?`<span class="tag-badge tag-${p.tag}">${p.tag}</span>`:'';const isDiv=p.ktc&&Math.abs(p._r-p.ktc)>5;html+=`<div class="rt-row ${isDiv?'hi':''}"><div class="rt-rank ${rc[i]||''}">${p._r}</div><div class="rt-player"><span class="rt-name">${p.name} ${rb}</span><span class="rt-team">${p.team}</span></div><div style="text-align:center"><span class="pos-badge pos-${p.pos}">${p.pos}</span></div><div class="rt-age">${p.age}</div><div style="text-align:center">${tb}</div><div>${ktcHtml}</div><div>${diffHtml}</div></div>`;});document.getElementById('rankings-table').innerHTML=html;}
-function showPage(p){document.querySelectorAll('.page').forEach(e=>e.classList.remove('active'));document.getElementById(`page-${p}`).classList.add('active');document.querySelectorAll('.nav-links a').forEach(e=>e.classList.remove('active'));const n=document.getElementById(`nav-${p}`);if(n)n.classList.add('active');if(p==='rankings')renderTable();window.scrollTo(0,0);}
-renderTable();
+const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRMVgrbSn-csKQPtQ-kXC-MUK7fww8zjkvU5z8I0pZap7ZOzqPioEtpnX3nCeBC3qru1E-aHl3Nw7St/pub?gid=0&single=true&output=csv';
+const cfg = {qb:'sf', sc:'ppr', tep:'off', rk:'inc'};
+let currentTab = 'all', divergeOnly = false;
+let players = [];
+
+async function loadSheet() {
+  document.getElementById('rankings-table').innerHTML = '<div class="empty-state">Loading rankings...</div>';
+  try {
+    const res = await fetch(SHEET_URL);
+    const text = await res.text();
+    const rows = text.trim().split('\n').slice(1);
+    players = rows.map(row => {
+      const cols = row.split(',');
+      return {
+        name:    cols[0]?.trim() || '',
+        team:    cols[1]?.trim() || '',
+        pos:     cols[2]?.trim() || '',
+        age:     cols[3]?.trim() || '',
+        sf:      parseInt(cols[4]) || 0,
+        oqb:     parseInt(cols[5]) || 0,
+        tep1:    parseInt(cols[6]) || 0,
+        tep2:    parseInt(cols[7]) || 0,
+        tep3:    parseInt(cols[8]) || 0,
+        ktc:     parseInt(cols[9]) || null,
+        tag:     cols[10]?.trim() || '',
+        rookie:  (cols[11]?.trim().toUpperCase() === 'YES'),
+      };
+    }).filter(p => p.name && p.sf > 0);
+    renderTable();
+  } catch(e) {
+    document.getElementById('rankings-table').innerHTML = '<div class="empty-state">Could not load rankings. Please try again later.</div>';
+  }
+}
+
+function getScore(p) {
+  let s = cfg.qb === 'sf' ? p.sf : p.oqb;
+  if (cfg.tep === 'tep1') s += p.tep1;
+  if (cfg.tep === 'tep2') s += p.tep2;
+  if (cfg.tep === 'tep3') s += p.tep3;
+  return s;
+}
+
+function getTier(s) {
+  if (s >= 9500) return 'Tier 1 — Elite';
+  if (s >= 8200) return 'Tier 2 — Franchise Cornerstones';
+  if (s >= 6100) return 'Tier 3 — Strong Starters';
+  if (s >= 4400) return 'Tier 4 — Solid Contributors';
+  if (s >= 2400) return 'Tier 5 — Depth & Upside';
+  if (s >= 1400) return 'Tier 6 — Roster Fillers';
+  if (s >= 800)  return 'Tier 7 — Deep Stashes';
+  return 'Tier 8 — Lottery Tickets';
+}
+
+function setSetting(k, v) {
+  cfg[k] = v;
+  document.querySelectorAll(`[id^="${k}-"]`).forEach(e => e.classList.remove('on'));
+  document.getElementById(`${k}-${v}`).classList.add('on');
+  renderTable();
+}
+function setTab(t) {
+  currentTab = t;
+  document.querySelectorAll('.pos-tab').forEach(e => e.classList.remove('active'));
+  document.getElementById(`tab-${t}`).classList.add('active');
+  renderTable();
+}
+function setRtype(t) {
+  document.querySelectorAll('.rtype-tab').forEach(e => e.classList.remove('active'));
+  document.getElementById(`rtype-${t}`).classList.add('active');
+  document.getElementById('overall-rankings').style.display = t === 'overall' ? 'block' : 'none';
+  document.getElementById('weekly-rankings').style.display = t === 'weekly' ? 'block' : 'none';
+}
+function toggleDiverge() {
+  divergeOnly = !divergeOnly;
+  document.getElementById('diverge-btn').classList.toggle('on', divergeOnly);
+  renderTable();
+}
+
+function renderTable() {
+  const q = document.getElementById('search-input').value.toLowerCase();
+  let list = [...players];
+  if (cfg.rk === 'sep') list = list.filter(p => !p.rookie);
+  if (currentTab !== 'all') list = list.filter(p => p.pos === currentTab);
+  if (q) list = list.filter(p => p.name.toLowerCase().includes(q) || p.team.toLowerCase().includes(q));
+  list.sort((a, b) => getScore(b) - getScore(a));
+  list.forEach((p, i) => p._r = i + 1);
+  if (divergeOnly) list = list.filter(p => p.ktc && Math.abs(p._r - p.ktc) > 5);
+  document.getElementById('results-count').textContent = `${list.length} player${list.length !== 1 ? 's' : ''}`;
+  if (!list.length) {
+    document.getElementById('rankings-table').innerHTML = `<div class="empty-state">${divergeOnly ? 'No major divergences with current filters' : 'No players found'}</div>`;
+    return;
+  }
+  const tc = {};
+  list.forEach(p => { const t = getTier(getScore(p)); tc[t] = (tc[t] || 0) + 1; });
+  let html = `<div class="rt-head"><span>Rank</span><span>Player</span><span>Pos</span><span>Age</span><span>Tag</span><span>KTC</span><span>vs KTC</span></div>`;
+  let lastTier = null;
+  const rc = ['gold', 'silver', 'bronze'];
+  list.forEach((p, i) => {
+    const s = getScore(p), tier = getTier(s);
+    if (tier !== lastTier && !divergeOnly) {
+      html += `<div class="tier-header"><span class="tier-name">${tier}</span><div class="tier-line"></div><span class="tier-count">${tc[tier]} players</span></div>`;
+      lastTier = tier;
+    }
+    let diffHtml = `<span class="ktc-diff ktc-na">—</span>`;
+    if (p.ktc) {
+      const d = p.ktc - p._r;
+      diffHtml = Math.abs(d) <= 5
+        ? `<span class="ktc-diff ktc-eq">~</span>`
+        : d > 0
+          ? `<span class="ktc-diff ktc-up">&#9650; ${d}</span>`
+          : `<span class="ktc-diff ktc-dn">&#9660; ${Math.abs(d)}</span>`;
+    }
+    const ktcHtml = p.ktc ? `<span style="font-size:13px;color:#666;display:block;text-align:center">${p.ktc}</span>` : `<span style="font-size:13px;color:#333;display:block;text-align:center">—</span>`;
+    const rb = p.rookie && cfg.rk === 'inc' ? `<span class="tag-badge tag-R">R</span>` : '';
+    const tb = p.tag ? `<span class="tag-badge tag-${p.tag}">${p.tag}</span>` : '';
+    const isDiv = p.ktc && Math.abs(p._r - p.ktc) > 5;
+    html += `<div class="rt-row ${isDiv ? 'hi' : ''}">
+      <div class="rt-rank ${rc[i] || ''}">${p._r}</div>
+      <div class="rt-player"><span class="rt-name">${p.name} ${rb}</span><span class="rt-team">${p.team}</span></div>
+      <div style="text-align:center"><span class="pos-badge pos-${p.pos}">${p.pos}</span></div>
+      <div class="rt-age">${p.age}</div>
+      <div style="text-align:center">${tb}</div>
+      <div>${ktcHtml}</div>
+      <div>${diffHtml}</div>
+    </div>`;
+  });
+  document.getElementById('rankings-table').innerHTML = html;
+}
+
+function showPage(p) {
+  document.querySelectorAll('.page').forEach(e => e.classList.remove('active'));
+  document.getElementById(`page-${p}`).classList.add('active');
+  document.querySelectorAll('.nav-links a').forEach(e => e.classList.remove('active'));
+  const n = document.getElementById(`nav-${p}`);
+  if (n) n.classList.add('active');
+  if (p === 'rankings') loadSheet();
+  window.scrollTo(0, 0);
+}
 </script>
-<script>
 const YT_API_KEY = 'AIzaSyCxaLpiBlm2Abnsv3z5ol1iGZP0q9KoIzo';
 const YT_CHANNEL_ID = 'UCiCzmfphi0LFimECbgcWlqw';
 const PLAY_ICON = '<svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>';

@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>VF WAR Tool | Dynasty Football Hub</title>
+<meta name="description" content="Victory Formation WAR Tool — see how valuable players were in your specific Sleeper league settings." />
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#0a0a0a;color:#f0f0f0;min-height:100vh}
+a{text-decoration:none;color:inherit}
+
+/* NAV */
+.nav{position:sticky;top:0;z-index:100;height:64px;background:rgba(10,10,10,0.97);border-bottom:1px solid #1e1e1e;display:flex;align-items:center;justify-content:space-between;padding:0 2rem}
+.nav-logo{display:flex;align-items:center;gap:12px;cursor:pointer}
+.nav-logo span{font-size:17px;font-weight:700;letter-spacing:1px;color:#f0f0f0;text-transform:uppercase}
+.nav-links{display:flex;gap:2rem}
+.nav-links a{font-size:14px;font-weight:500;color:#666;cursor:pointer;transition:color 0.2s;text-decoration:none}
+.nav-links a:hover{color:#c0392b}
+.nav-yt{display:flex;align-items:center;gap:8px;background:#c0392b;color:#fff;font-size:13px;font-weight:600;padding:9px 16px;border-radius:6px;border:none;cursor:pointer}
+
+/* PAGE HEADER */
+.page-header{background:linear-gradient(180deg,#140303 0%,#0a0a0a 100%);border-bottom:1px solid #1e1e1e;padding:3rem 2rem 2.5rem;text-align:center}
+.page-header .tag{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:#c0392b;margin-bottom:0.8rem}
+.page-header h1{font-size:38px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:#fff;margin-bottom:0.5rem}
+.page-header h1 span{color:#c0392b}
+.page-header p{font-size:15px;color:#777;max-width:520px;margin:0 auto}
+
+/* MAIN */
+.main{max-width:1000px;margin:0 auto;padding:2.5rem 2rem}
+
+/* STEP CARDS */
+.step-card{background:#161616;border:1px solid #1e1e1e;border-radius:12px;padding:1.8rem;margin-bottom:1.5rem}
+.step-header{display:flex;align-items:center;gap:12px;margin-bottom:1.2rem}
+.step-num{width:30px;height:30px;border-radius:50%;background:#c0392b;color:#fff;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.step-title{font-size:16px;font-weight:600;color:#fff}
+.step-sub{font-size:13px;color:#666;margin-top:2px}
+
+/* INPUTS */
+.input-row{display:flex;gap:10px;align-items:center}
+.input-field{flex:1;background:#0d0d0d;border:1px solid #2a2a2a;border-radius:7px;padding:11px 14px;font-size:14px;color:#f0f0f0;outline:none;font-family:inherit;transition:border-color 0.2s}
+.input-field:focus{border-color:#c0392b}
+.input-field::placeholder{color:#444}
+.btn-red{background:#c0392b;color:#fff;padding:11px 22px;border-radius:7px;font-size:14px;font-weight:600;border:none;cursor:pointer;white-space:nowrap;transition:opacity 0.2s}
+.btn-red:hover{opacity:0.9}
+.btn-red:disabled{opacity:0.4;cursor:not-allowed}
+.btn-outline{background:transparent;color:#f0f0f0;border:1px solid #333;padding:11px 22px;border-radius:7px;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.2s}
+.btn-outline:hover{border-color:#c0392b;color:#c0392b}
+
+/* LEAGUE LIST */
+.league-list{display:flex;flex-direction:column;gap:8px;margin-top:1rem}
+.league-item{background:#0d0d0d;border:1px solid #2a2a2a;border-radius:8px;padding:14px 16px;cursor:pointer;transition:all 0.15s;display:flex;align-items:center;justify-content:space-between}
+.league-item:hover{border-color:#c0392b;background:#120202}
+.league-item.selected{border-color:#c0392b;background:rgba(192,57,43,0.08)}
+.league-name{font-size:14px;font-weight:600;color:#f0f0f0}
+.league-meta{font-size:12px;color:#555;margin-top:3px}
+.league-badge{font-size:11px;font-weight:600;padding:3px 8px;border-radius:4px;background:rgba(192,57,43,0.15);color:#e87c73}
+
+/* SETTINGS DISPLAY */
+.settings-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-top:1rem}
+.setting-chip{background:#0d0d0d;border:1px solid #2a2a2a;border-radius:7px;padding:10px 14px}
+.setting-chip-label{font-size:11px;color:#555;text-transform:uppercase;letter-spacing:0.7px;margin-bottom:4px}
+.setting-chip-value{font-size:15px;font-weight:600;color:#f0f0f0}
+.setting-chip-value.highlight{color:#c0392b}
+
+/* STATUS */
+.status-box{background:#0d0d0d;border:1px solid #2a2a2a;border-radius:8px;padding:1.2rem 1.5rem;margin-top:1rem;font-size:14px;color:#777;display:flex;align-items:center;gap:10px}
+.status-dot{width:8px;height:8px;border-radius:50%;background:#555;flex-shrink:0}
+.status-dot.green{background:#68d391;animation:pulse 2s infinite}
+.status-dot.red{background:#e24b4a}
+.status-dot.loading{background:#f6ad55;animation:pulse 1s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+
+/* WAR TABLE */
+.war-controls{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:1.2rem}
+.pos-tabs{display:flex;gap:6px;flex-wrap:wrap}
+.pos-tab{padding:8px 16px;border-radius:6px;border:1px solid #2a2a2a;background:#161616;color:#666;font-size:13px;font-weight:600;cursor:pointer;transition:all 0.15s}
+.pos-tab.active{background:#c0392b;border-color:#c0392b;color:#fff}
+.search-wrap{position:relative}
+.search-input{background:#161616;border:1px solid #2a2a2a;border-radius:7px;padding:9px 14px 9px 36px;font-size:13px;color:#f0f0f0;outline:none;font-family:inherit;width:200px}
+.search-input::placeholder{color:#444}
+.search-icon{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:#444;font-size:14px}
+
+.war-table{border-radius:10px;overflow:hidden;border:1px solid #1e1e1e}
+.war-head{display:grid;grid-template-columns:50px 1fr 70px 80px 80px 80px 80px 90px;padding:9px 16px;background:#181818;border-bottom:1px solid #1e1e1e}
+.war-head span{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.7px;color:#444}
+.war-head span:nth-child(n+3){text-align:center}
+.war-row{display:grid;grid-template-columns:50px 1fr 70px 80px 80px 80px 80px 90px;padding:11px 16px;border-bottom:1px solid #111;align-items:center;transition:background 0.1s}
+.war-row:last-child{border-bottom:none}
+.war-row:hover{background:#111}
+
+.war-rank{font-size:15px;font-weight:800;color:#333}
+.war-rank.gold{color:#f6ad55}
+.war-rank.silver{color:#aaa}
+.war-rank.bronze{color:#cd7f32}
+.war-player{display:flex;flex-direction:column;gap:1px}
+.war-name{font-size:14px;font-weight:600;color:#f0f0f0}
+.war-team{font-size:12px;color:#444}
+.pos-badge{font-size:11px;font-weight:700;padding:2px 7px;border-radius:4px;text-align:center;display:inline-block}
+.pos-QB{background:rgba(99,179,237,0.12);color:#63b3ed}
+.pos-RB{background:rgba(104,211,145,0.12);color:#68d391}
+.pos-WR{background:rgba(246,173,85,0.12);color:#f6ad55}
+.pos-TE{background:rgba(192,57,43,0.18);color:#e87c73}
+.stat-cell{font-size:13px;color:#888;text-align:center}
+.war-value{font-size:14px;font-weight:700;text-align:center}
+.war-positive{color:#68d391}
+.war-negative{color:#e24b4a}
+.war-bar-wrap{display:flex;align-items:center;gap:8px}
+.war-bar{height:6px;border-radius:3px;background:#68d391;min-width:2px;transition:width 0.3s}
+.war-bar.neg{background:#e24b4a}
+
+/* EMPTY / LOADING */
+.empty-state{padding:4rem;text-align:center;color:#444;font-size:14px}
+.loading-spinner{display:inline-block;width:20px;height:20px;border:2px solid #333;border-top-color:#c0392b;border-radius:50%;animation:spin 0.8s linear infinite;margin-right:8px}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* DISCLAIMER */
+.disclaimer{background:#111;border:1px solid #1e1e1e;border-radius:8px;padding:1rem 1.5rem;margin-bottom:1.5rem;font-size:12px;color:#555;line-height:1.6}
+.disclaimer strong{color:#888}
+
+/* FOOTER */
+.footer{background:#080808;border-top:1px solid #1e1e1e;padding:1.5rem 2rem;text-align:center;margin-top:3rem}
+.footer p{font-size:12px;color:#333}
+.footer span{color:#c0392b}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <a class="nav-logo" href="/">
+    <span>Victory Formation</span>
+  </a>
+  <div class="nav-links">
+    <a href="/">Home</a>
+    <a href="/#episodes" onclick="window.location='/'">Episodes</a>
+    <a href="/#rankings" onclick="window.location='/'">Rankings</a>
+    <a href="/war-tool.html" style="color:#c0392b">VF WAR Tool</a>
+  </div>
+  <a href="https://www.youtube.com/@victoryformation8924" target="_blank" class="nav-yt">&#9654; YouTube</a>
+</nav>
+
+<div class="page-header">
+  <div class="tag">Victory Formation</div>
+  <h1>VF <span>WAR</span> Tool</h1>
+  <p>Connect your Sleeper league and see exactly how valuable each player was in your specific scoring system — Wins Above Replacement, calculated for your league.</p>
+</div>
+
+<div class="main">
+
+  <div class="disclaimer">
+    <strong>How it works:</strong> Enter your Sleeper username, select your league, and the tool automatically reads your scoring settings, roster configuration, and 2025 season stats. WAR = how many wins above a replacement-level player each player provided in your exact league format. Higher WAR = more valuable in your specific league.
+  </div>
+
+  <!-- STEP 1: Username -->
+  <div class="step-card" id="step1">
+    <div class="step-header">
+      <div class="step-num">1</div>
+      <div>
+        <div class="step-title">Enter Your Sleeper Username</div>
+        <div class="step-sub">Your Sleeper username (not display name)</div>
+      </div>
+    </div>
+    <div class="input-row">
+      <input class="input-field" type="text" id="username-input" placeholder="e.g. dynastyking123" />
+      <button class="btn-red" id="fetch-leagues-btn" onclick="fetchLeagues()">Find Leagues</button>
+    </div>
+    <div id="username-status"></div>
+  </div>
+
+  <!-- STEP 2: Select League -->
+  <div class="step-card" id="step2" style="display:none">
+    <div class="step-header">
+      <div class="step-num">2</div>
+      <div>
+        <div class="step-title">Select Your League</div>
+        <div class="step-sub">Choose which league to calculate WAR for</div>
+      </div>
+    </div>
+    <div id="league-list"></div>
+  </div>
+
+  <!-- STEP 3: League Settings -->
+  <div class="step-card" id="step3" style="display:none">
+    <div class="step-header">
+      <div class="step-num">3</div>
+      <div>
+        <div class="step-title">League Settings Detected</div>
+        <div class="step-sub">WAR will be calculated using these exact settings</div>
+      </div>
+    </div>
+    <div id="settings-display"></div>
+    <div style="margin-top:1.2rem">
+      <button class="btn-red" id="calc-btn" onclick="calculateWAR()">Calculate WAR</button>
+    </div>
+  </div>
+
+  <!-- RESULTS -->
+  <div id="results-section" style="display:none">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;flex-wrap:wrap;gap:10px">
+      <div>
+        <div style="font-size:20px;font-weight:700;color:#fff" id="results-title">2025 WAR Rankings</div>
+        <div style="font-size:13px;color:#555;margin-top:3px" id="results-subtitle"></div>
+      </div>
+      <button class="btn-outline" onclick="resetTool()">&#8592; New League</button>
+    </div>
+
+    <div class="war-controls">
+      <div class="pos-tabs">
+        <div class="pos-tab active" id="wtab-all" onclick="setWarTab('all')">All</div>
+        <div class="pos-tab" id="wtab-QB" onclick="setWarTab('QB')">QB</div>
+        <div class="pos-tab" id="wtab-RB" onclick="setWarTab('RB')">RB</div>
+        <div class="pos-tab" id="wtab-WR" onclick="setWarTab('WR')">WR</div>
+        <div class="pos-tab" id="wtab-TE" onclick="setWarTab('TE')">TE</div>
+      </div>
+      <div class="search-wrap">
+        <span class="search-icon">&#128269;</span>
+        <input class="search-input" type="text" placeholder="Search players..." id="war-search" oninput="renderWAR()" />
+      </div>
+    </div>
+
+    <div class="war-table" id="war-table"></div>
+  </div>
+
+</div>
+
+<footer class="footer">
+  <p><span>Dynasty Football Hub</span> &middot; VF WAR Tool &middot; Powered by Sleeper API &middot; &copy; 2025</p>
+</footer>
+
+<script>
+let selectedLeague = null;
+let leagueSettings = null;
+let warPlayers = [];
+let warTab = 'all';
+let sleeperPlayers = {};
+
+// ── STEP 1: Fetch leagues ──
+async function fetchLeagues() {
+  const username = document.getElementById('username-input').value.trim();
+  if (!username) return;
+  
+  const btn = document.getElementById('fetch-leagues-btn');
+  btn.disabled = true;
+  btn.textContent = 'Loading...';
+  
+  setStatus('username-status', 'loading', 'Looking up your Sleeper account...');
+  
+  try {
+    // Get user ID
+    const userRes = await fetch(`https://api.sleeper.app/v1/user/${username}`);
+    if (!userRes.ok) throw new Error('User not found');
+    const user = await userRes.json();
+    if (!user || !user.user_id) throw new Error('User not found');
+    
+    // Get leagues for 2025
+    const leaguesRes = await fetch(`https://api.sleeper.app/v1/user/${user.user_id}/leagues/nfl/2025`);
+    const leagues = await leaguesRes.json();
+    
+    if (!leagues || leagues.length === 0) throw new Error('No 2025 leagues found');
+    
+    // Filter dynasty leagues
+    const dynastyLeagues = leagues.filter(l => 
+      l.settings?.type === 2 || 
+      l.name?.toLowerCase().includes('dynasty') ||
+      l.metadata?.scoring_type?.includes('dynasty') ||
+      leagues.length <= 10 // show all if not many
+    );
+    
+    const showLeagues = dynastyLeagues.length > 0 ? dynastyLeagues : leagues;
+    
+    setStatus('username-status', 'green', `Found ${showLeagues.length} league${showLeagues.length !== 1 ? 's' : ''} for ${user.display_name || username}`);
+    renderLeagues(showLeagues);
+    document.getElementById('step2').style.display = 'block';
+    document.getElementById('step2').scrollIntoView({behavior:'smooth', block:'nearest'});
+    
+  } catch(e) {
+    setStatus('username-status', 'red', e.message === 'User not found' 
+      ? 'Username not found. Check your Sleeper username and try again.' 
+      : 'Something went wrong. Please try again.');
+    btn.disabled = false;
+    btn.textContent = 'Find Leagues';
+  }
+}
+
+function renderLeagues(leagues) {
+  const html = leagues.map(l => {
+    const teams = l.total_rosters || l.settings?.num_teams || '?';
+    const scoring = l.scoring_settings?.rec === 1 ? 'PPR' : l.scoring_settings?.rec === 0.5 ? 'Half PPR' : 'Standard';
+    const hasSF = l.roster_positions?.includes('SUPER_FLEX') ? 'Superflex' : '1QB';
+    return `<div class="league-item" onclick="selectLeague('${l.league_id}', this)" data-id="${l.league_id}">
+      <div>
+        <div class="league-name">${l.name || 'Unnamed League'}</div>
+        <div class="league-meta">${teams} teams &middot; ${scoring} &middot; ${hasSF}</div>
+      </div>
+      <div class="league-badge">${l.season || '2025'}</div>
+    </div>`;
+  }).join('');
+  document.getElementById('league-list').innerHTML = `<div class="league-list">${html}</div>`;
+}
+
+// ── STEP 2: Select league ──
+async function selectLeague(leagueId, el) {
+  document.querySelectorAll('.league-item').forEach(i => i.classList.remove('selected'));
+  el.classList.add('selected');
+  
+  try {
+    const res = await fetch(`https://api.sleeper.app/v1/league/${leagueId}`);
+    selectedLeague = await res.json();
+    renderSettings();
+    document.getElementById('step3').style.display = 'block';
+    document.getElementById('step3').scrollIntoView({behavior:'smooth', block:'nearest'});
+  } catch(e) {
+    alert('Could not load league settings. Please try again.');
+  }
+}
+
+function renderSettings() {
+  const l = selectedLeague;
+  const sc = l.scoring_settings || {};
+  const pos = l.roster_positions || [];
+  
+  const rec = sc.rec || 0;
+  const bonus_rec_wr = sc.bonus_rec_wr || 0;
+  const bonus_rec_te = sc.bonus_rec_te || 0;
+  const rush_att = sc.rush_att || 0;
+  const rec_yd = sc.rec_yd || 0.1;
+  const rush_yd = sc.rush_yd || 0.1;
+  const pass_yd = sc.pass_yd || 0.04;
+  const pass_td = sc.pass_td || 4;
+  const rush_td = sc.rush_td || 6;
+  const rec_td = sc.rec_td || 6;
+  
+  const numQB = pos.filter(p=>p==='QB').length;
+  const numRB = pos.filter(p=>p==='RB').length;
+  const numWR = pos.filter(p=>p==='WR').length;
+  const numTE = pos.filter(p=>p==='TE').length;
+  const numFlex = pos.filter(p=>p==='FLEX'||p==='REC_FLEX').length;
+  const numSF = pos.filter(p=>p==='SUPER_FLEX').length;
+  const teams = l.total_rosters || 12;
+
+  leagueSettings = { rec, bonus_rec_wr, bonus_rec_te, rush_att, rec_yd, rush_yd, pass_yd, pass_td, rush_td, rec_td, numQB, numRB, numWR, numTE, numFlex, numSF, teams };
+
+  const chips = [
+    {label:'Teams', value: teams},
+    {label:'Reception Pts', value: rec === 1 ? '1.0 (PPR)' : rec === 0.5 ? '0.5 (Half)' : rec === 0 ? '0 (Std)' : rec, highlight: rec > 0},
+    {label:'WR Bonus', value: bonus_rec_wr > 0 ? `+${bonus_rec_wr}` : 'None', highlight: bonus_rec_wr > 0},
+    {label:'TE Bonus', value: bonus_rec_te > 0 ? `+${bonus_rec_te}` : 'None', highlight: bonus_rec_te > 0},
+    {label:'Carry Bonus', value: rush_att > 0 ? `+${rush_att}` : 'None', highlight: rush_att > 0},
+    {label:'QB Format', value: numSF > 0 ? 'Superflex' : '1QB', highlight: numSF > 0},
+    {label:'Starters', value: `${numQB}QB ${numRB}RB ${numWR}WR ${numTE}TE`},
+    {label:'Flex Spots', value: `${numFlex} FLEX${numSF > 0 ? ` + ${numSF} SF` : ''}`},
+    {label:'Pass TD', value: `${pass_td} pts`},
+    {label:'Rush TD', value: `${rush_td} pts`},
+    {label:'Rec TD', value: `${rec_td} pts`},
+  ];
+
+  document.getElementById('settings-display').innerHTML = `
+    <div class="settings-grid">
+      ${chips.map(c => `
+        <div class="setting-chip">
+          <div class="setting-chip-label">${c.label}</div>
+          <div class="setting-chip-value ${c.highlight ? 'highlight' : ''}">${c.value}</div>
+        </div>
+      `).join('')}
+    </div>`;
+}
+
+// ── STEP 3: Calculate WAR ──
+async function calculateWAR() {
+  const btn = document.getElementById('calc-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="loading-spinner"></span>Loading stats...';
+
+  try {
+    // Fetch all Sleeper players (for name/position lookup)
+    btn.innerHTML = '<span class="loading-spinner"></span>Fetching player data...';
+    const playersRes = await fetch('https://api.sleeper.app/v1/players/nfl');
+    sleeperPlayers = await playersRes.json();
+
+    // Fetch 2025 season stats
+    btn.innerHTML = '<span class="loading-spinner"></span>Loading 2025 stats...';
+    const statsRes = await fetch('https://api.sleeper.app/stats/nfl/regular/2025?season_type=regular');
+    const stats = await statsRes.json();
+
+    btn.innerHTML = '<span class="loading-spinner"></span>Calculating WAR...';
+    
+    // Calculate fantasy points for each player
+    const playerWAR = [];
+    
+    for (const [playerId, playerStats] of Object.entries(stats)) {
+      const info = sleeperPlayers[playerId];
+      if (!info) continue;
+      
+      const pos = info.position;
+      if (!['QB','RB','WR','TE'].includes(pos)) continue;
+      
+      const pts = calcFantasyPoints(playerStats, pos);
+      if (pts < 10) continue; // filter out inactive players
+      
+      playerWAR.push({
+        id: playerId,
+        name: `${info.first_name} ${info.last_name}`,
+        team: info.team || 'FA',
+        pos,
+        pts,
+        stats: playerStats,
+      });
+    }
+
+    // Calculate replacement level per position
+    const replacementLevel = calcReplacementLevel(playerWAR);
+
+    // Calculate WAR
+    playerWAR.forEach(p => {
+      p.war = parseFloat(((p.pts - replacementLevel[p.pos]) / 10).toFixed(2));
+    });
+
+    // Sort by WAR
+    playerWAR.sort((a,b) => b.war - a.war);
+    warPlayers = playerWAR;
+
+    // Show results
+    const leagueName = selectedLeague.name || 'Your League';
+    document.getElementById('results-title').textContent = `2025 WAR Rankings`;
+    document.getElementById('results-subtitle').textContent = `${leagueName} · ${leagueSettings.teams} teams · Based on 2025 regular season stats`;
+    document.getElementById('results-section').style.display = 'block';
+    renderWAR();
+    document.getElementById('results-section').scrollIntoView({behavior:'smooth', block:'start'});
+
+  } catch(e) {
+    console.error(e);
+    alert('Could not load stats. The Sleeper API may be temporarily unavailable. Please try again.');
+  }
+
+  btn.disabled = false;
+  btn.textContent = 'Recalculate';
+}
+
+function calcFantasyPoints(s, pos) {
+  const sc = leagueSettings;
+  let pts = 0;
+
+  // Passing
+  pts += (s.pass_yd || 0) * sc.pass_yd;
+  pts += (s.pass_td || 0) * sc.pass_td;
+  pts -= (s.pass_int || 0) * 2;
+  pts += (s.pass_2pt || 0) * 2;
+
+  // Rushing
+  pts += (s.rush_yd || 0) * sc.rush_yd;
+  pts += (s.rush_td || 0) * sc.rush_td;
+  pts += (s.rush_att || 0) * sc.rush_att;
+  pts += (s.rush_2pt || 0) * 2;
+
+  // Receiving
+  pts += (s.rec || 0) * sc.rec;
+  pts += (s.rec_yd || 0) * sc.rec_yd;
+  pts += (s.rec_td || 0) * sc.rec_td;
+  pts += (s.rec_2pt || 0) * 2;
+
+  // Position bonuses
+  if (pos === 'WR') pts += (s.rec || 0) * sc.bonus_rec_wr;
+  if (pos === 'TE') pts += (s.rec || 0) * sc.bonus_rec_te;
+
+  // Fumbles
+  pts -= (s.fum_lost || 0) * 2;
+
+  return parseFloat(pts.toFixed(1));
+}
+
+function calcReplacementLevel(players) {
+  const sc = leagueSettings;
+  const teams = sc.teams;
+  
+  // Figure out how many of each position are starters
+  // Flex spots split between RB/WR/TE (assume 50/40/10)
+  const flexRB = Math.round(sc.numFlex * 0.4);
+  const flexWR = Math.round(sc.numFlex * 0.5);
+  const flexTE = sc.numFlex - flexRB - flexWR;
+  
+  // SF spots (QB gets most value)
+  const sfQB = sc.numSF;
+
+  const starterCounts = {
+    QB: (sc.numQB + sfQB) * teams,
+    RB: (sc.numRB + flexRB) * teams,
+    WR: (sc.numWR + flexWR) * teams,
+    TE: (sc.numTE + flexTE) * teams,
+  };
+
+  const replacement = {};
+  for (const pos of ['QB','RB','WR','TE']) {
+    const sorted = players.filter(p=>p.pos===pos).sort((a,b)=>b.pts-a.pts);
+    const cutoff = starterCounts[pos];
+    // Replacement = average of the 3 players just outside starter threshold
+    const border = sorted.slice(Math.max(0,cutoff-1), cutoff+3);
+    replacement[pos] = border.length > 0 ? border.reduce((s,p)=>s+p.pts,0)/border.length : 0;
+  }
+
+  return replacement;
+}
+
+function renderWAR() {
+  const q = document.getElementById('war-search').value.toLowerCase();
+  let list = [...warPlayers];
+  if (warTab !== 'all') list = list.filter(p => p.pos === warTab);
+  if (q) list = list.filter(p => p.name.toLowerCase().includes(q) || p.team.toLowerCase().includes(q));
+
+  if (!list.length) {
+    document.getElementById('war-table').innerHTML = '<div class="empty-state">No players found</div>';
+    return;
+  }
+
+  const maxWAR = Math.max(...list.map(p=>Math.abs(p.war)));
+  const rc = ['gold','silver','bronze'];
+
+  let html = `<div class="war-head">
+    <span>Rank</span><span>Player</span><span>Pos</span>
+    <span>Pts</span><span>Rec</span><span>Rush Yds</span><span>WAR</span><span>Value</span>
+  </div>`;
+
+  list.forEach((p, i) => {
+    const barWidth = Math.round((Math.abs(p.war) / maxWAR) * 80);
+    const isNeg = p.war < 0;
+    html += `<div class="war-row">
+      <div class="war-rank ${rc[i]||''}">${i+1}</div>
+      <div class="war-player">
+        <span class="war-name">${p.name}</span>
+        <span class="war-team">${p.team}</span>
+      </div>
+      <div style="text-align:center"><span class="pos-badge pos-${p.pos}">${p.pos}</span></div>
+      <div class="stat-cell">${p.pts}</div>
+      <div class="stat-cell">${p.stats.rec || 0}</div>
+      <div class="stat-cell">${p.stats.rush_yd || 0}</div>
+      <div class="war-value ${isNeg?'war-negative':'war-positive'}">${p.war > 0 ? '+' : ''}${p.war}</div>
+      <div class="war-bar-wrap">
+        <div class="war-bar ${isNeg?'neg':''}" style="width:${barWidth}px"></div>
+      </div>
+    </div>`;
+  });
+
+  document.getElementById('war-table').innerHTML = html;
+}
+
+function setWarTab(tab) {
+  warTab = tab;
+  document.querySelectorAll('.pos-tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById(`wtab-${tab}`).classList.add('active');
+  renderWAR();
+}
+
+function resetTool() {
+  selectedLeague = null;
+  leagueSettings = null;
+  warPlayers = [];
+  warTab = 'all';
+  document.getElementById('step2').style.display = 'none';
+  document.getElementById('step3').style.display = 'none';
+  document.getElementById('results-section').style.display = 'none';
+  document.getElementById('username-input').value = '';
+  document.getElementById('username-status').innerHTML = '';
+  document.getElementById('fetch-leagues-btn').disabled = false;
+  document.getElementById('fetch-leagues-btn').textContent = 'Find Leagues';
+  window.scrollTo(0,0);
+}
+
+function setStatus(id, type, msg) {
+  const colors = {green:'green',red:'red',loading:'loading'};
+  document.getElementById(id).innerHTML = `
+    <div class="status-box">
+      <div class="status-dot ${colors[type]||''}"></div>
+      <span>${msg}</span>
+    </div>`;
+}
+
+// Allow Enter key on username input
+document.getElementById('username-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') fetchLeagues();
+});
+</script>
+</body>
+</html>

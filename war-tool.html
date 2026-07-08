@@ -449,11 +449,16 @@ async function calculateWAR() {
     });
 
     // Calculate VF Score — positional scarcity normalized
+    // Limit to top 50 per position to equalize pool sizes and remove distortion
     const positions = ['QB','RB','WR','TE'];
     const posStats = {};
     positions.forEach(pos => {
-      const wars = playerWAR.filter(p => p.pos === pos && p.war > 0).map(p => p.war);
-      if (wars.length === 0) return;
+      const top50 = playerWAR
+        .filter(p => p.pos === pos && p.war > 0)
+        .sort((a,b) => b.war - a.war)
+        .slice(0, 50);
+      if (top50.length === 0) return;
+      const wars = top50.map(p => p.war);
       const mean = wars.reduce((s,v) => s+v, 0) / wars.length;
       const variance = wars.reduce((s,v) => s + Math.pow(v-mean,2), 0) / wars.length;
       const std = Math.sqrt(variance);

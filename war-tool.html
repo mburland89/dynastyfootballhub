@@ -377,26 +377,26 @@ async function calculateWAR() {
     btn.innerHTML = '<span class="loading-spinner"></span>Fetching player data...';
     const playersRes = await fetch('https://api.sleeper.app/v1/players/nfl');
     sleeperPlayers = await playersRes.json();
-
-    // Fetch 2025 season stats
     btn.innerHTML = '<span class="loading-spinner"></span>Loading 2025 stats...';
-    const statsRes = await fetch('https://api.sleeper.app/stats/nfl/regular/2025?season_type=regular');
-    const stats = await statsRes.json();
+    const statsRes = await fetch('https://api.sleeper.com/stats/nfl/2025?season_type=regular&position[]=QB&position[]=RB&position[]=WR&position[]=TE&order_by=pts_ppr');
+    const statsArray = await statsRes.json();
 
     btn.innerHTML = '<span class="loading-spinner"></span>Calculating WAR...';
     
     // Calculate fantasy points for each player
     const playerWAR = [];
     
-    for (const [playerId, playerStats] of Object.entries(stats)) {
+    for (const playerStats of statsArray) {
+      const playerId = playerStats.player_id;
       const info = sleeperPlayers[playerId];
       if (!info) continue;
       
       const pos = info.position;
       if (!['QB','RB','WR','TE'].includes(pos)) continue;
       
-      const pts = calcFantasyPoints(playerStats, pos);
-      if (pts < 10) continue; // filter out inactive players
+      const stats = playerStats.stats || {};
+      const pts = calcFantasyPoints(stats, pos);
+      if (pts < 10) continue;
       
       playerWAR.push({
         id: playerId,
@@ -404,7 +404,7 @@ async function calculateWAR() {
         team: info.team || 'FA',
         pos,
         pts,
-        stats: playerStats,
+        stats,
       });
     }
 

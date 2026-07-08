@@ -373,76 +373,58 @@ async function calculateWAR() {
   btn.innerHTML = '<span class="loading-spinner"></span>Loading stats...';
 
   try {
-    // Fetch all Sleeper players (for name/position lookup)
+    // Fetch all Sleeper players
     btn.innerHTML = '<span class="loading-spinner"></span>Fetching player data...';
     const playersRes = await fetch('https://api.sleeper.app/v1/players/nfl');
     sleeperPlayers = await playersRes.json();
 
-    // Pull points directly from league matchups — most accurate approach
-    // Sleeper already calculated exact points in your scoring system
-    btn.innerHTML = '<span class="loading-spinner"></span>Loading league matchups...';
+    // Fetch weekly NFL stats for all 18 weeks in parallel
+    // Using the weekly stats endpoint which gives raw NFL stats per player
+    btn.innerHTML = '<span class="loading-spinner"></span>Loading 2025 weekly stats...';
+    // Always pull all 18 NFL weeks — WAR reflects full NFL season production
+    const totalWeeks = 18;
     
-    const leagueId = selectedLeague.league_id;
-    const totalWeeks = selectedLeague.settings?.playoff_week_start - 1 || 17;
-    
-    // Fetch all weeks in parallel
     const weekPromises = [];
     for (let week = 1; week <= totalWeeks; week++) {
       weekPromises.push(
-        fetch(`https://api.sleeper.app/v1/league/${leagueId}/matchups/${week}`)
+        fetch(`https://api.sleeper.app/v1/stats/nfl/regular/2025/${week}`)
           .then(r => r.json())
-          .catch(() => [])
+          .catch(() => ({}))
       );
     }
-    const allWeeks = await Promise.all(weekPromises);
+    const allWeekStats = await Promise.all(weekPromises);
 
     btn.innerHTML = '<span class="loading-spinner"></span>Calculating WAR...';
 
-    // Aggregate player points across all weeks
-    const playerPoints = {}; // playerId -> total pts
-    const playerStats = {};  // playerId -> aggregated stats
+    // Aggregate stats per player across all weeks
+    const playerSeasonStats = {}; // playerId -> aggregated stats object
 
-    allWeeks.forEach(weekData => {
-      if (!Array.isArray(weekData)) return;
-      weekData.forEach(matchup => {
-        const points = matchup.players_points || {};
-        const stats = matchup.players || [];
-        
-        Object.entries(points).forEach(([playerId, pts]) => {
-          if (!playerPoints[playerId]) playerPoints[playerId] = 0;
-          playerPoints[playerId] += pts;
+    allWeekStats.forEach(weekData => {
+      if (!weekData || typeof weekData !== 'object') return;
+      Object.entries(weekData).forEach(([playerId, stats]) => {
+        if (!stats || typeof stats !== 'object') return;
+        if (!playerSeasonStats[playerId]) playerSeasonStats[playerId] = {};
+        // Sum each stat key
+        Object.entries(stats).forEach(([key, val]) => {
+          if (typeof val === 'number') {
+            playerSeasonStats[playerId][key] = (playerSeasonStats[playerId][key] || 0) + val;
+          }
         });
       });
     });
 
-    // Also fetch weekly stats to get raw stat lines (rec, rush_yd etc)
-    // Use the new stats endpoint per player would be too many calls
-    // Instead fetch season stats from sleeper stats endpoint as supplement
-    let seasonStats = {};
-    try {
-      const statsRes = await fetch('https://api.sleeper.com/stats/nfl/2025?season_type=regular&position[]=QB&position[]=RB&position[]=WR&position[]=TE');
-      const statsArr = await statsRes.json();
-      if (Array.isArray(statsArr)) {
-        statsArr.forEach(p => {
-          if (p.player_id) seasonStats[p.player_id] = p.stats || {};
-        });
-      }
-    } catch(e) {
-      // Stats supplement failed — we'll show 0 for raw stats but points will still be accurate
-    }
-
-    // Build player WAR array using matchup points (most accurate)
+    // Build player WAR array
     const playerWAR = [];
 
-    Object.entries(playerPoints).forEach(([playerId, pts]) => {
+    Object.entries(playerSeasonStats).forEach(([playerId, stats]) => {
       const info = sleeperPlayers[playerId];
       if (!info) return;
       
       const pos = info.position;
       if (!['QB','RB','WR','TE'].includes(pos)) return;
-      if (pts < 5) return; // filter truly inactive players
       
-      const rawStats = seasonStats[playerId] || {};
+      const pts = calcFantasyPoints(stats, pos);
+      if (pts < 5) return;
       
       playerWAR.push({
         id: playerId,
@@ -450,15 +432,15 @@ async function calculateWAR() {
         team: info.team || 'FA',
         pos,
         pts: parseFloat(pts.toFixed(1)),
-        stats: rawStats,
+        stats,
       });
     });
 
     if (playerWAR.length === 0) {
-      throw new Error('No player data found. This league may not have 2025 matchup data yet.');
+      throw new Error('No player data found for the 2025 season. Please try again later.');
     }
 
-    // Calculate replacement level per position
+    // Calculate replacement level
     const replacementLevel = calcReplacementLevel(playerWAR);
 
     // Calculate WAR
@@ -489,7 +471,7 @@ async function calculateWAR() {
 
     const leagueName = selectedLeague.name || 'Your League';
     document.getElementById('results-title').textContent = `2025 WAR Rankings`;
-    document.getElementById('results-subtitle').textContent = `${leagueName} · ${leagueSettings.teams} teams · Based on actual league scoring`;
+    document.getElementById('results-subtitle').textContent = `${leagueName} · ${leagueSettings.teams} teams · Based on 2025 NFL stats in your scoring system`;
     document.getElementById('results-section').style.display = 'block';
     renderWAR();
     document.getElementById('results-section').scrollIntoView({behavior:'smooth', block:'start'});

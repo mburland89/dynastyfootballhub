@@ -382,7 +382,7 @@ async function loadSheet() {
         tep2:   parseInt(cols[7]) || 0,
         tep3:   parseInt(cols[8]) || 0,
         ktc:    parseInt(cols[9]) || null,
-        tag:    cols[10] || '',
+        tag:    (cols[10] || '').trim(),
         rookie: (cols[11] || '').toUpperCase().trim() === 'YES',
       };
     }).filter(p => p.name && p.sf > 0);
@@ -444,7 +444,21 @@ function renderTable() {
   if (q) list = list.filter(p => p.name.toLowerCase().includes(q) || p.team.toLowerCase().includes(q));
   list.sort((a, b) => getScore(b) - getScore(a));
   list.forEach((p, i) => p._r = i + 1);
-  if (divergeOnly) list = list.filter(p => p.ktc && Math.abs(p._r - p.ktc) > 5);
+
+  // Calculate position-specific KTC ranks
+  if (currentTab !== 'all') {
+    // Get all players of this position sorted by KTC rank
+    const posPlayers = players.filter(p => p.pos === currentTab && p.ktc);
+    posPlayers.sort((a, b) => a.ktc - b.ktc);
+    posPlayers.forEach((p, i) => p._ktcPosRank = i + 1);
+    // For players without KTC rank
+    players.filter(p => p.pos === currentTab && !p.ktc).forEach(p => p._ktcPosRank = null);
+  } else {
+    // Use overall KTC rank
+    list.forEach(p => p._ktcPosRank = p.ktc);
+  }
+
+  if (divergeOnly) list = list.filter(p => p._ktcPosRank && Math.abs(p._r - p._ktcPosRank) > 3);
   document.getElementById('results-count').textContent = `${list.length} player${list.length !== 1 ? 's' : ''}`;
   if (!list.length) {
     document.getElementById('rankings-table').innerHTML = `<div class="empty-state">${divergeOnly ? 'No major divergences with current filters' : 'No players found'}</div>`;
@@ -462,18 +476,19 @@ function renderTable() {
       lastTier = tier;
     }
     let diffHtml = `<span class="ktc-diff ktc-na">—</span>`;
-    if (p.ktc) {
-      const d = p.ktc - p._r;
-      diffHtml = Math.abs(d) <= 5
+    if (p._ktcPosRank) {
+      const d = p._ktcPosRank - p._r;
+      diffHtml = Math.abs(d) <= 3
         ? `<span class="ktc-diff ktc-eq">~</span>`
         : d > 0
           ? `<span class="ktc-diff ktc-up">&#9650; ${d}</span>`
           : `<span class="ktc-diff ktc-dn">&#9660; ${Math.abs(d)}</span>`;
     }
-    const ktcHtml = p.ktc ? `<span style="font-size:13px;color:#666;display:block;text-align:center">${p.ktc}</span>` : `<span style="font-size:13px;color:#333;display:block;text-align:center">—</span>`;
+    const ktcHtml = p._ktcPosRank ? `<span style="font-size:13px;color:#666;display:block;text-align:center">${p._ktcPosRank}</span>` : `<span style="font-size:13px;color:#333;display:block;text-align:center">—</span>`;
     const rb = p.rookie && cfg.rk === 'inc' ? `<span class="tag-badge tag-R">R</span>` : '';
-    const tb = p.tag ? `<span class="tag-badge tag-${p.tag}">${p.tag}</span>` : '';
-    const isDiv = p.ktc && Math.abs(p._r - p.ktc) > 5;
+    const tagDisplay = p.tag ? p.tag.charAt(0).toUpperCase() + p.tag.slice(1).toLowerCase() : '';
+    const tb = tagDisplay ? `<span class="tag-badge tag-${tagDisplay}">${tagDisplay}</span>` : '';
+    const isDiv = p._ktcPosRank && Math.abs(p._r - p._ktcPosRank) > 3;
     html += `<div class="rt-row ${isDiv ? 'hi' : ''}">
       <div class="rt-rank ${rc[i] || ''}">${p._r}</div>
       <div class="rt-player"><span class="rt-name">${p.name} ${rb}</span><span class="rt-team">${p.team}</span></div>

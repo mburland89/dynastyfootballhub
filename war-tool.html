@@ -270,21 +270,17 @@ async function fetchLeagues() {
     const user = await userRes.json();
     if (!user || !user.user_id) throw new Error('User not found');
     
-    // Get leagues for 2025
-    const leaguesRes = await fetch(`https://api.sleeper.app/v1/user/${user.user_id}/leagues/nfl/2025`);
-    const leagues = await leaguesRes.json();
+    // Get leagues for both 2025 and 2026 (covers new startups drafted in offseason)
+    const [leagues2025, leagues2026] = await Promise.all([
+      fetch(`https://api.sleeper.app/v1/user/${user.user_id}/leagues/nfl/2025`).then(r => r.json()).catch(() => []),
+      fetch(`https://api.sleeper.app/v1/user/${user.user_id}/leagues/nfl/2026`).then(r => r.json()).catch(() => [])
+    ]);
+    const leagues = [...(leagues2025 || []), ...(leagues2026 || [])];
     
-    if (!leagues || leagues.length === 0) throw new Error('No 2025 leagues found');
+    if (!leagues || leagues.length === 0) throw new Error('No leagues found');
     
-    // Filter dynasty leagues
-    const dynastyLeagues = leagues.filter(l => 
-      l.settings?.type === 2 || 
-      l.name?.toLowerCase().includes('dynasty') ||
-      l.metadata?.scoring_type?.includes('dynasty') ||
-      leagues.length <= 10 // show all if not many
-    );
-    
-    const showLeagues = dynastyLeagues.length > 0 ? dynastyLeagues : leagues;
+    // Show all leagues — let user pick which one to calculate
+    const showLeagues = leagues;
     
     setStatus('username-status', 'green', `Found ${showLeagues.length} league${showLeagues.length !== 1 ? 's' : ''} for ${user.display_name || username}`);
     renderLeagues(showLeagues);

@@ -150,7 +150,7 @@ a{text-decoration:none;color:inherit}
 <div class="main">
 
   <div class="disclaimer">
-    <strong>WAR</strong> — how much a player outscored the replacement-level player at their position in your exact league settings. &nbsp;|&nbsp; <strong>VF Score</strong> — cross-positional value that accounts for your league's scoring environment. Compares each player's WAR to same-ranked players at other positions. 50 = same as peers at that rank, 75+ = elite, 25- = below peers. In a carry-bonus league, RBs naturally score higher WAR — VF Score reflects that reality.
+    <strong>WAR</strong> — how much a player outscored the replacement-level player at their position in your exact league settings. &nbsp;|&nbsp; <strong>Irrepl.</strong> — Irreplaceability score. How big was the drop-off from this player to the next best at their position? McBride scoring 124 pts more than TE2 scores higher than CMC scoring 27 pts more than RB2 — even if CMC has more total WAR. 75+ = irreplaceable, 50 = average drop-off, 25- = easily replaced.
   </div>
 
   <!-- STEP 1: Username -->
@@ -462,45 +462,46 @@ async function calculateWAR() {
       p.war = parseFloat(((p.pts - replacementLevel[p.pos]) / 10).toFixed(2));
     });
 
-    // Calculate VF Score — cross-positional rank comparison
-    // Only meaningful for players with positive WAR
+    // Calculate VF Score — Irreplaceability (gap to next best at position)
+    // How much does your team suffer if you lose this player vs the next best option?
     const positions = ['QB','RB','WR','TE'];
     
-    // Sort each position by WAR descending and assign position rank
+    // Sort each position by points descending
     const posSorted = {};
     positions.forEach(pos => {
       posSorted[pos] = playerWAR
-        .filter(p => p.pos === pos && p.war > 0)
-        .sort((a,b) => b.war - a.war);
+        .filter(p => p.pos === pos)
+        .sort((a,b) => b.pts - a.pts);
       posSorted[pos].forEach((p, i) => p._posRank = i + 1);
     });
 
-    // For each player with positive WAR, compare to same-ranked players at other positions
+    // For each player, calculate gap to next best at their position
     playerWAR.forEach(p => {
-      if (p.war <= 0) { p.vfScore = 0; return; }
-      
       const posRank = p._posRank;
-      if (!posRank) { p.vfScore = 0; return; }
+      if (!posRank) { p.gapScore = 0; p.vfScore = 0; return; }
       
-      // Get WAR of same-ranked player at each other position
-      const comparisons = positions
-        .filter(pos => pos !== p.pos)
-        .map(pos => {
-          const sameRanked = posSorted[pos][posRank - 1];
-          return sameRanked ? sameRanked.war : 0;
-        })
-        .filter(w => w > 0); // only compare to valid players
-      
-      if (comparisons.length === 0) { p.vfScore = 50; return; }
-      
-      const avgComparison = comparisons.reduce((s,v) => s+v, 0) / comparisons.length;
-      const diff = p.war - avgComparison;
-      const maxDiff = 10;
-      p.vfScore = parseFloat((50 + (diff / maxDiff) * 25).toFixed(1));
+      const sorted = posSorted[p.pos];
+      const nextBest = sorted[posRank]; // next player in sorted array
+      const gap = nextBest ? p.pts - nextBest.pts : p.pts;
+      p.gapScore = parseFloat(gap.toFixed(1));
+    });
+
+    // Normalize gap scores across ALL positions to get VF Score
+    // This way McBride's huge gap vs TE2 compares fairly to CMC's smaller gap vs RB2
+    const allGaps = playerWAR.filter(p => p.gapScore > 0).map(p => p.gapScore);
+    const maxGap = Math.max(...allGaps);
+    const meanGap = allGaps.reduce((s,v) => s+v, 0) / allGaps.length;
+    const stdGap = Math.sqrt(allGaps.reduce((s,v) => s + Math.pow(v-meanGap,2), 0) / allGaps.length);
+
+    playerWAR.forEach(p => {
+      if (p.gapScore <= 0) { p.vfScore = 0; return; }
+      // Z-score the gap, scale to 0-100
+      const z = stdGap > 0 ? (p.gapScore - meanGap) / stdGap : 0;
+      p.vfScore = parseFloat((50 + z * 15).toFixed(1));
       p.vfScore = Math.max(0, Math.min(100, p.vfScore));
     });
 
-    // Sort overall by WAR (most accurate cross-positional measure in your scoring system)
+    // Sort overall by WAR but VF Score shows irreplaceability
     playerWAR.sort((a,b) => b.war - a.war);
     warPlayers = playerWAR;
 
@@ -606,7 +607,7 @@ function renderWAR() {
 
   let html = `<div class="war-head">
     <span>Rank</span><span>Player</span><span>Pos</span>
-    <span>Pts</span><span>Rec</span><span>Rush Yds</span><span>WAR</span><span>VF Score</span><span>Value</span>
+    <span>Pts</span><span>Rec</span><span>Rush Yds</span><span>WAR</span><span>Irrepl.</span><span>Value</span>
   </div>`;
 
   list.forEach((p, i) => {
@@ -624,7 +625,10 @@ function renderWAR() {
       <div class="stat-cell">${p.stats.rec || 0}</div>
       <div class="stat-cell">${p.stats.rush_yd || 0}</div>
       <div class="war-value ${isNeg?'war-negative':'war-positive'}">${p.war > 0 ? '+' : ''}${p.war}</div>
-      <div class="war-value" style="color:${vfColor}">${p.vfScore}</div>
+      <div class="war-value" style="color:${vfColor}">
+        <div>${p.vfScore}</div>
+        <div style="font-size:10px;font-weight:400;color:#555;margin-top:1px">+${p.gapScore}pts gap</div>
+      </div>
       <div class="war-bar-wrap">
         <div class="war-bar ${isNeg?'neg':''}" style="width:${barWidth}px"></div>
       </div>

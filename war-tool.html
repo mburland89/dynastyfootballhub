@@ -150,7 +150,7 @@ a{text-decoration:none;color:inherit}
 <div class="main">
 
   <div class="disclaimer">
-    <strong>WAR</strong> — how much a player outscored the replacement-level player at their position in your exact league settings. &nbsp;|&nbsp; <strong>Irrepl.</strong> — Irreplaceability score. How big was the drop-off from this player to the next best at their position? McBride scoring 124 pts more than TE2 scores higher than CMC scoring 27 pts more than RB2 — even if CMC has more total WAR. 75+ = irreplaceable, 50 = average drop-off, 25- = easily replaced.
+    <strong>WAR</strong> — how much a player outscored the replacement-level player at their position. Flex spots are simulated — best available players fill flex after mandatory spots. &nbsp;|&nbsp; <strong>VF Score</strong> — cross-positional value using points-to-replacement ratio. Accounts for roster construction: McBride scoring 2x replacement TE ranks above CMC scoring 1.4x replacement RB, even if CMC scored more raw points. 70+ = elite, 50 = replacement level, below 50 = replaceable.
   </div>
 
   <!-- STEP 1: Username -->
@@ -462,47 +462,32 @@ async function calculateWAR() {
       p.war = parseFloat(((p.pts - replacementLevel[p.pos]) / 10).toFixed(2));
     });
 
-    // Calculate VF Score — Irreplaceability (gap to next best at position)
-    // How much does your team suffer if you lose this player vs the next best option?
-    const positions = ['QB','RB','WR','TE'];
+    // Calculate VF Score — Points relative to replacement (ratio method)
+    // Accounts for roster construction and flex spots properly
+    // Formula: pts / replacement_level for that position
+    // McBride: 304 / 150(TE repl) = 2.03 → higher than CMC: 307 / 220(RB repl) = 1.40
+    const replacement = leagueSettings._replacement;
+
+    playerWAR.forEach(p => {
+      const repl = replacement[p.pos] || 1;
+      if (repl <= 0) { p.vfScore = 0; return; }
+      p.ratio = parseFloat((p.pts / repl).toFixed(3));
+    });
+
+    // Normalize ratio to 0-100 scale for display
+    const allRatios = playerWAR.filter(p => p.ratio > 0).map(p => p.ratio);
+    const maxRatio = Math.max(...allRatios);
+    const minRatio = Math.min(...allRatios);
     
-    // Sort each position by points descending
-    const posSorted = {};
-    positions.forEach(pos => {
-      posSorted[pos] = playerWAR
-        .filter(p => p.pos === pos)
-        .sort((a,b) => b.pts - a.pts);
-      posSorted[pos].forEach((p, i) => p._posRank = i + 1);
-    });
-
-    // For each player, calculate gap to next best at their position
     playerWAR.forEach(p => {
-      const posRank = p._posRank;
-      if (!posRank) { p.gapScore = 0; p.vfScore = 0; return; }
-      
-      const sorted = posSorted[p.pos];
-      const nextBest = sorted[posRank]; // next player in sorted array
-      const gap = nextBest ? p.pts - nextBest.pts : p.pts;
-      p.gapScore = parseFloat(gap.toFixed(1));
-    });
-
-    // Normalize gap scores across ALL positions to get VF Score
-    // This way McBride's huge gap vs TE2 compares fairly to CMC's smaller gap vs RB2
-    const allGaps = playerWAR.filter(p => p.gapScore > 0).map(p => p.gapScore);
-    const maxGap = Math.max(...allGaps);
-    const meanGap = allGaps.reduce((s,v) => s+v, 0) / allGaps.length;
-    const stdGap = Math.sqrt(allGaps.reduce((s,v) => s + Math.pow(v-meanGap,2), 0) / allGaps.length);
-
-    playerWAR.forEach(p => {
-      if (p.gapScore <= 0) { p.vfScore = 0; return; }
-      // Z-score the gap, scale to 0-100
-      const z = stdGap > 0 ? (p.gapScore - meanGap) / stdGap : 0;
-      p.vfScore = parseFloat((50 + z * 15).toFixed(1));
+      if (!p.ratio || p.ratio <= 0) { p.vfScore = 0; return; }
+      // Scale: replacement level player = 50, best player = 100, below replacement < 50
+      p.vfScore = parseFloat((50 + ((p.ratio - 1) / (maxRatio - 1)) * 50).toFixed(1));
       p.vfScore = Math.max(0, Math.min(100, p.vfScore));
     });
 
-    // Sort overall by WAR but VF Score shows irreplaceability
-    playerWAR.sort((a,b) => b.war - a.war);
+    // Sort by VF Score overall — this is the true cross-positional value
+    playerWAR.sort((a,b) => b.vfScore - a.vfScore);
     warPlayers = playerWAR;
 
     const leagueName = selectedLeague.name || 'Your League';
@@ -557,31 +542,64 @@ function calcFantasyPoints(s, pos) {
 function calcReplacementLevel(players) {
   const sc = leagueSettings;
   const teams = sc.teams;
-  
-  // Figure out how many of each position are starters
-  // Flex spots split between RB/WR/TE (assume 50/40/10)
-  const flexRB = Math.round(sc.numFlex * 0.4);
-  const flexWR = Math.round(sc.numFlex * 0.5);
-  const flexTE = sc.numFlex - flexRB - flexWR;
-  
-  // SF spots (QB gets most value)
-  const sfQB = sc.numSF;
 
-  const starterCounts = {
-    QB: (sc.numQB + sfQB) * teams,
-    RB: (sc.numRB + flexRB) * teams,
-    WR: (sc.numWR + flexWR) * teams,
-    TE: (sc.numTE + flexTE) * teams,
+  // Sort each position by points
+  const byPos = {};
+  ['QB','RB','WR','TE'].forEach(pos => {
+    byPos[pos] = players.filter(p => p.pos === pos).sort((a,b) => b.pts - a.pts);
+  });
+
+  // Step 1: Fill mandatory starting spots first
+  const mandatoryStarters = {
+    QB: sc.numQB * teams,
+    RB: sc.numRB * teams,
+    WR: sc.numWR * teams,
+    TE: sc.numTE * teams,
   };
 
+  // Step 2: Simulate flex spot allocation
+  // Each team fills mandatory spots first, then fills flex with best remaining player
+  const totalFlex = (sc.numFlex + sc.numSF) * teams;
+  
+  // Track which players are "used" as mandatory starters
+  const usedCounts = { QB: 0, RB: 0, WR: 0, TE: 0 };
+  
+  // Collect remaining players after mandatory spots filled
+  const flexPool = [];
+  ['QB','RB','WR','TE'].forEach(pos => {
+    const mandatory = mandatoryStarters[pos];
+    // Players beyond mandatory spots are available for flex
+    byPos[pos].slice(mandatory).forEach(p => flexPool.push(p));
+  });
+  
+  // Sort flex pool by points — best available fills flex spots
+  flexPool.sort((a,b) => b.pts - a.pts);
+  
+  // Count how many of each position fill flex spots
+  const flexCounts = { QB: 0, RB: 0, WR: 0, TE: 0 };
+  flexPool.slice(0, totalFlex).forEach(p => flexCounts[p.pos]++);
+
+  // Step 3: Total starters per position = mandatory + flex
+  const totalStarters = {
+    QB: mandatoryStarters.QB + flexCounts.QB,
+    RB: mandatoryStarters.RB + flexCounts.RB,
+    WR: mandatoryStarters.WR + flexCounts.WR,
+    TE: mandatoryStarters.TE + flexCounts.TE,
+  };
+
+  // Step 4: Replacement level = average of players just outside total starter threshold
   const replacement = {};
-  for (const pos of ['QB','RB','WR','TE']) {
-    const sorted = players.filter(p=>p.pos===pos).sort((a,b)=>b.pts-a.pts);
-    const cutoff = starterCounts[pos];
-    // Replacement = average of the 3 players just outside starter threshold
-    const border = sorted.slice(Math.max(0,cutoff-1), cutoff+3);
-    replacement[pos] = border.length > 0 ? border.reduce((s,p)=>s+p.pts,0)/border.length : 0;
-  }
+  ['QB','RB','WR','TE'].forEach(pos => {
+    const cutoff = totalStarters[pos];
+    const borderPlayers = byPos[pos].slice(Math.max(0, cutoff - 1), cutoff + 3);
+    replacement[pos] = borderPlayers.length > 0 
+      ? borderPlayers.reduce((s,p) => s + p.pts, 0) / borderPlayers.length 
+      : 0;
+  });
+
+  // Store for VF Score calculation
+  leagueSettings._totalStarters = totalStarters;
+  leagueSettings._replacement = replacement;
 
   return replacement;
 }
@@ -592,7 +610,7 @@ function renderWAR() {
   if (warTab !== 'all') list = list.filter(p => p.pos === warTab);
   if (q) list = list.filter(p => p.name.toLowerCase().includes(q) || p.team.toLowerCase().includes(q));
   if (warTab === 'all') {
-    list.sort((a, b) => b.war - a.war);
+    list.sort((a, b) => b.vfScore - a.vfScore);
   } else {
     list.sort((a, b) => b.war - a.war);
   }
@@ -607,13 +625,11 @@ function renderWAR() {
 
   let html = `<div class="war-head">
     <span>Rank</span><span>Player</span><span>Pos</span>
-    <span>Pts</span><span>Rec</span><span>Rush Yds</span><span>WAR</span><span>Irrepl.</span><span>Value</span>
+    <span>Pts</span><span>Rec</span><span>Rush Yds</span><span>WAR</span><span>VF Score</span><span>Value</span>
   </div>`;
 
   list.forEach((p, i) => {
-    const barWidth = Math.round((Math.abs(p.war) / maxWAR) * 80);
-    const isNeg = p.war < 0;
-    const vfColor = p.vfScore >= 60 ? '#68d391' : p.vfScore >= 50 ? '#f6ad55' : '#e24b4a';
+    const vfColor = p.vfScore >= 70 ? '#68d391' : p.vfScore >= 55 ? '#f6ad55' : '#e24b4a';
     html += `<div class="war-row">
       <div class="war-rank ${rc[i]||''}">${i+1}</div>
       <div class="war-player">
@@ -624,13 +640,10 @@ function renderWAR() {
       <div class="stat-cell">${p.pts}</div>
       <div class="stat-cell">${p.stats.rec || 0}</div>
       <div class="stat-cell">${p.stats.rush_yd || 0}</div>
-      <div class="war-value ${isNeg?'war-negative':'war-positive'}">${p.war > 0 ? '+' : ''}${p.war}</div>
-      <div class="war-value" style="color:${vfColor}">
-        <div>${p.vfScore}</div>
-        <div style="font-size:10px;font-weight:400;color:#555;margin-top:1px">+${p.gapScore}pts gap</div>
-      </div>
+      <div class="war-value ${p.war < 0 ? 'war-negative':'war-positive'}">${p.war > 0 ? '+' : ''}${p.war}</div>
+      <div class="war-value" style="color:${vfColor}">${p.vfScore}</div>
       <div class="war-bar-wrap">
-        <div class="war-bar ${isNeg?'neg':''}" style="width:${barWidth}px"></div>
+        <div class="war-bar ${p.war < 0 ? 'neg':''}" style="width:${Math.round((Math.abs(p.war)/maxWAR)*80)}px"></div>
       </div>
     </div>`;
   });

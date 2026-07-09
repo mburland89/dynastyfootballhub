@@ -560,11 +560,13 @@ function renderSide(side, players) {
   }
   container.innerHTML = players.map(p => {
     const v = getPlayerValue(p);
+    const premiumRate = getStudPremium(p);
+    const premiumBadge = premiumRate > 0 ? `<span style="font-size:10px;background:rgba(246,173,85,0.15);color:#f6ad55;padding:2px 6px;border-radius:4px;font-weight:600;margin-left:6px">⭐ +${Math.round(premiumRate*100)}%</span>` : '';
     return `<div class="trade-player">
       <div class="tp-left">
         <span class="pos-badge pos-${p.pos}">${p.pos}</span>
         <div class="tp-info">
-          <div class="tp-name">${p.name}</div>
+          <div class="tp-name">${p.name}${premiumBadge}</div>
           <div class="tp-meta">${p.team || '—'} ${p.age ? '· Age '+p.age : ''}</div>
         </div>
       </div>
@@ -576,16 +578,49 @@ function renderSide(side, players) {
   }).join('');
 }
 
-function updateTrade() {
-  const valA = tradeA.reduce((s,p) => s + getPlayerValue(p), 0);
-  const valB = tradeB.reduce((s,p) => s + getPlayerValue(p), 0);
+function getStudPremium(p) {
+  // Picks always at face value
+  if (p.pos === 'PK') return 0;
+  const v = getPlayerValue(p);
+  if (v >= 9000) return 0.15;  // Elite — 15% premium
+  if (v >= 6000) return 0.08;  // Good starter — 8% premium
+  if (v >= 3000) return 0.02;  // Depth — 2% premium
+  return 0; // Everyone else — face value
+}
 
-  document.getElementById('value-a').textContent = valA.toLocaleString();
-  document.getElementById('value-b').textContent = valB.toLocaleString();
+function getAdjustedPackageValue(players) {
+  if (!players.length) return { raw: 0, adjusted: 0, premium: 0, studName: null };
+  
+  const raw = players.reduce((s,p) => s + getPlayerValue(p), 0);
+  
+  // Find highest value non-pick player — that's the stud
+  const stud = players
+    .filter(p => p.pos !== 'PK')
+    .sort((a,b) => getPlayerValue(b) - getPlayerValue(a))[0];
+  
+  if (!stud) return { raw, adjusted: raw, premium: 0, studName: null };
+  
+  const premiumRate = getStudPremium(stud);
+  const studValue = getPlayerValue(stud);
+  const premiumAmt = Math.round(studValue * premiumRate);
+  const adjusted = raw + premiumAmt;
+  
+  return { raw, adjusted, premium: premiumAmt, premiumRate, studName: stud.name };
+}
+
+function updateTrade() {
+  const pkgA = getAdjustedPackageValue(tradeA);
+  const pkgB = getAdjustedPackageValue(tradeB);
+  const valA = pkgA.adjusted;
+  const valB = pkgB.adjusted;
+
+  // Show raw value on the side headers
+  document.getElementById('value-a').textContent = pkgA.raw.toLocaleString();
+  document.getElementById('value-b').textContent = pkgB.raw.toLocaleString();
   document.getElementById('count-a').textContent = `${tradeA.length} player${tradeA.length !== 1 ? 's' : ''}`;
   document.getElementById('count-b').textContent = `${tradeB.length} player${tradeB.length !== 1 ? 's' : ''}`;
 
-  // Color winning side
+  // Color winning side based on adjusted value
   const elA = document.getElementById('value-a');
   const elB = document.getElementById('value-b');
   elA.className = 'trade-side-value' + (valA > valB ? ' winning' : valA < valB ? ' losing' : '');
@@ -621,9 +656,16 @@ function updateTrade() {
   }
 
   document.getElementById('verdict-main').innerHTML = `<span class="${verdictClass}">${verdictText}</span>`;
-  document.getElementById('verdict-sub').textContent = diffPct <= 5
+
+  // Build premium explanation
+  let premiumText = '';
+  if (pkgA.premium > 0) premiumText += `<div style="margin-top:6px;font-size:12px;color:#f6ad55">⭐ ${pkgA.studName} stud premium: +${pkgA.premiumAmt?.toLocaleString() || pkgA.premium.toLocaleString()} (${Math.round(pkgA.premiumRate*100)}%)</div>`;
+  if (pkgB.premium > 0) premiumText += `<div style="margin-top:4px;font-size:12px;color:#f6ad55">⭐ ${pkgB.studName} stud premium: +${pkgB.premiumAmt?.toLocaleString() || pkgB.premium.toLocaleString()} (${Math.round(pkgB.premiumRate*100)}%)</div>`;
+
+  document.getElementById('verdict-sub').innerHTML = (diffPct <= 5
     ? 'Values are within 5% — this is a balanced trade'
-    : `${valA > valB ? 'Team A' : 'Team B'} is getting ${diffPct}% more value (${diff.toLocaleString()} pts difference)`;
+    : `${valA > valB ? 'Team A' : 'Team B'} is getting ${diffPct}% more value (${diff.toLocaleString()} pts difference after stud premium)`)
+    + premiumText;
 
   // Re-render sides to update values
   renderSide('a', tradeA);

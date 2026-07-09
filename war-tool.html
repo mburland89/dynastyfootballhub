@@ -83,10 +83,12 @@ a{text-decoration:none;color:inherit}
 .search-icon{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:#444;font-size:14px}
 
 .war-table{border-radius:10px;overflow:hidden;border:1px solid #1e1e1e}
-.war-head{display:grid;grid-template-columns:50px 1fr 70px 70px 70px 70px 80px 80px 90px;padding:9px 16px;background:#181818;border-bottom:1px solid #1e1e1e}
-.war-head span{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.7px;color:#444}
+.war-head{display:grid;grid-template-columns:46px 1fr 65px 55px 65px 65px 70px 75px 75px 80px;padding:9px 16px;background:#181818;border-bottom:1px solid #1e1e1e}
+.war-head span{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.7px;color:#444;cursor:pointer;user-select:none}
+.war-head span:hover{color:#c0392b}
+.war-head span.sort-active{color:#c0392b}
 .war-head span:nth-child(n+3){text-align:center}
-.war-row{display:grid;grid-template-columns:50px 1fr 70px 70px 70px 70px 80px 80px 90px;padding:11px 16px;border-bottom:1px solid #111;align-items:center;transition:background 0.1s}
+.war-row{display:grid;grid-template-columns:46px 1fr 65px 55px 65px 65px 70px 75px 75px 80px;padding:11px 16px;border-bottom:1px solid #111;align-items:center;transition:background 0.1s}
 .war-row:last-child{border-bottom:none}
 .war-row:hover{background:#111}
 
@@ -211,11 +213,12 @@ a{text-decoration:none;color:inherit}
       <div style="font-size:15px;font-weight:600;color:#fff;margin-bottom:0.4rem;">WAR Curve by Position</div>
       <div style="font-size:12px;color:#555;margin-bottom:1rem;">Value drop-off by position rank — hover to see player names</div>
       <canvas id="war-chart" style="width:100%;max-height:300px;"></canvas>
-      <div style="display:flex;gap:1.5rem;margin-top:1rem;flex-wrap:wrap;">
-        <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:#888;"><div style="width:16px;height:3px;background:#63b3ed;border-radius:2px"></div>QB</div>
-        <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:#888;"><div style="width:16px;height:3px;background:#68d391;border-radius:2px"></div>RB</div>
-        <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:#888;"><div style="width:16px;height:3px;background:#f6ad55;border-radius:2px"></div>WR</div>
-        <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:#888;"><div style="width:16px;height:3px;background:#e87c73;border-radius:2px"></div>TE</div>
+      <div style="display:flex;gap:1.5rem;margin-top:1rem;flex-wrap:wrap;" id="chart-legend">
+        <div class="chart-legend-item active" data-pos="QB" onclick="toggleChartPos('QB')" style="display:flex;align-items:center;gap:6px;font-size:12px;color:#888;cursor:pointer;padding:4px 8px;border-radius:4px;border:1px solid #222;transition:all 0.15s"><div style="width:16px;height:3px;background:#63b3ed;border-radius:2px"></div>QB</div>
+        <div class="chart-legend-item active" data-pos="RB" onclick="toggleChartPos('RB')" style="display:flex;align-items:center;gap:6px;font-size:12px;color:#888;cursor:pointer;padding:4px 8px;border-radius:4px;border:1px solid #222;transition:all 0.15s"><div style="width:16px;height:3px;background:#68d391;border-radius:2px"></div>RB</div>
+        <div class="chart-legend-item active" data-pos="WR" onclick="toggleChartPos('WR')" style="display:flex;align-items:center;gap:6px;font-size:12px;color:#888;cursor:pointer;padding:4px 8px;border-radius:4px;border:1px solid #222;transition:all 0.15s"><div style="width:16px;height:3px;background:#f6ad55;border-radius:2px"></div>WR</div>
+        <div class="chart-legend-item active" data-pos="TE" onclick="toggleChartPos('TE')" style="display:flex;align-items:center;gap:6px;font-size:12px;color:#888;cursor:pointer;padding:4px 8px;border-radius:4px;border:1px solid #222;transition:all 0.15s"><div style="width:16px;height:3px;background:#e87c73;border-radius:2px"></div>TE</div>
+        <div style="font-size:11px;color:#444;align-self:center;margin-left:0.5rem">Click to toggle positions</div>
       </div>
     </div>
 
@@ -413,12 +416,15 @@ async function calculateWAR() {
 
     // Aggregate stats per player across all weeks
     const playerSeasonStats = {}; // playerId -> aggregated stats object
+    const playerGamesPlayed = {}; // playerId -> games played count
 
     allWeekStats.forEach(weekData => {
       if (!weekData || typeof weekData !== 'object') return;
       Object.entries(weekData).forEach(([playerId, stats]) => {
         if (!stats || typeof stats !== 'object') return;
-        if (!playerSeasonStats[playerId]) playerSeasonStats[playerId] = {};
+        if (!playerSeasonStats[playerId]) { playerSeasonStats[playerId] = {}; playerGamesPlayed[playerId] = 0; }
+        // Count this as a game played (player appears in week data = they played)
+        playerGamesPlayed[playerId]++;
         // Sum each stat key
         Object.entries(stats).forEach(([key, val]) => {
           if (typeof val === 'number') {
@@ -441,12 +447,15 @@ async function calculateWAR() {
       const pts = calcFantasyPoints(stats, pos);
       if (pts < 5) return;
       
+      const gp = playerGamesPlayed[playerId] || 1;
+      
       playerWAR.push({
         id: playerId,
         name: `${info.first_name} ${info.last_name}`,
         team: info.team || 'FA',
         pos,
         pts: parseFloat(pts.toFixed(1)),
+        gp,
         stats,
       });
     });
@@ -461,6 +470,7 @@ async function calculateWAR() {
     // Calculate WAR
     playerWAR.forEach(p => {
       p.war = parseFloat(((p.pts - replacementLevel[p.pos]) / 10).toFixed(2));
+      p.warPerGame = parseFloat((p.war / (p.gp || 1)).toFixed(2));
     });
 
     // Calculate VF Score — Points relative to replacement (ratio method)
@@ -609,16 +619,27 @@ function calcReplacementLevel(players) {
   return replacement;
 }
 
+let sortCol = 'vfScore';
+let sortDir = -1; // -1 = desc, 1 = asc
+
+function sortBy(col) {
+  if (sortCol === col) { sortDir *= -1; }
+  else { sortCol = col; sortDir = -1; }
+  renderWAR();
+}
+
 function renderWAR() {
   const q = document.getElementById('war-search').value.toLowerCase();
   let list = [...warPlayers];
   if (warTab !== 'all') list = list.filter(p => p.pos === warTab);
   if (q) list = list.filter(p => p.name.toLowerCase().includes(q) || p.team.toLowerCase().includes(q));
-  if (warTab === 'all') {
-    list.sort((a, b) => b.vfScore - a.vfScore);
-  } else {
-    list.sort((a, b) => b.war - a.war);
-  }
+
+  // Sort by selected column
+  const col = sortCol || (warTab === 'all' ? 'vfScore' : 'war');
+  list.sort((a, b) => {
+    const av = a[col] ?? 0, bv = b[col] ?? 0;
+    return (bv - av) * sortDir * -1;
+  });
 
   if (!list.length) {
     document.getElementById('war-table').innerHTML = '<div class="empty-state">No players found</div>';
@@ -628,13 +649,27 @@ function renderWAR() {
   const maxWAR = Math.max(...list.map(p=>Math.abs(p.war)));
   const rc = ['gold','silver','bronze'];
 
+  const colLabel = (key, label) => {
+    const active = sortCol === key ? 'sort-active' : '';
+    const arrow = sortCol === key ? (sortDir === -1 ? ' ▼' : ' ▲') : '';
+    return `<span class="${active}" onclick="sortBy('${key}')">${label}${arrow}</span>`;
+  };
+
   let html = `<div class="war-head">
-    <span>Rank</span><span>Player</span><span>Pos</span>
-    <span>Pts</span><span>Rec</span><span>Rush Yds</span><span>WAR</span><span>VF Score</span><span>Value</span>
+    <span>Rank</span><span>Player</span>
+    ${colLabel('pos','Pos')}
+    ${colLabel('gp','GP')}
+    ${colLabel('pts','Pts')}
+    ${colLabel('stats.rec','Rec')}
+    ${colLabel('war','WAR')}
+    ${colLabel('warPerGame','WAR/G')}
+    ${colLabel('vfScore','VF Score')}
+    <span>Value</span>
   </div>`;
 
   list.forEach((p, i) => {
     const vfColor = p.vfScore >= 70 ? '#68d391' : p.vfScore >= 55 ? '#f6ad55' : '#e24b4a';
+    const warPGColor = p.warPerGame > 2 ? '#68d391' : p.warPerGame > 1 ? '#f6ad55' : '#aaa';
     html += `<div class="war-row">
       <div class="war-rank ${rc[i]||''}">${i+1}</div>
       <div class="war-player">
@@ -642,10 +677,11 @@ function renderWAR() {
         <span class="war-team">${p.team}</span>
       </div>
       <div style="text-align:center"><span class="pos-badge pos-${p.pos}">${p.pos}</span></div>
+      <div class="stat-cell">${p.gp || '?'}</div>
       <div class="stat-cell">${p.pts}</div>
       <div class="stat-cell">${p.stats.rec || 0}</div>
-      <div class="stat-cell">${p.stats.rush_yd || 0}</div>
       <div class="war-value ${p.war < 0 ? 'war-negative':'war-positive'}">${p.war > 0 ? '+' : ''}${p.war}</div>
+      <div class="war-value" style="color:${warPGColor}">${p.warPerGame > 0 ? '+' : ''}${p.warPerGame}</div>
       <div class="war-value" style="color:${vfColor}">${p.vfScore}</div>
       <div class="war-bar-wrap">
         <div class="war-bar ${p.war < 0 ? 'neg':''}" style="width:${Math.round((Math.abs(p.war)/maxWAR)*80)}px"></div>
@@ -665,6 +701,8 @@ function setWarTab(tab) {
 
 function resetTool() {
   if (warChart) { warChart.destroy(); warChart = null; }
+  hiddenPositions.clear();
+  document.querySelectorAll('.chart-legend-item').forEach(el => { el.style.opacity='1'; el.style.borderColor='#222'; });
   selectedLeague = null;
   leagueSettings = null;
   warPlayers = [];
@@ -693,6 +731,22 @@ document.getElementById('username-input').addEventListener('keydown', e => {
   if (e.key === 'Enter') fetchLeagues();
 });
 
+const hiddenPositions = new Set();
+
+function toggleChartPos(pos) {
+  const el = document.querySelector(`.chart-legend-item[data-pos="${pos}"]`);
+  if (hiddenPositions.has(pos)) {
+    hiddenPositions.delete(pos);
+    el.style.opacity = '1';
+    el.style.borderColor = '#222';
+  } else {
+    hiddenPositions.add(pos);
+    el.style.opacity = '0.3';
+    el.style.borderColor = '#555';
+  }
+  renderWARChart();
+}
+
 // ── WAR CURVE CHART ──
 let warChart = null;
 
@@ -701,7 +755,9 @@ function renderWARChart() {
   const colors = { QB:'#63b3ed', RB:'#68d391', WR:'#f6ad55', TE:'#e87c73' };
   const maxRank = 50;
 
-  const datasets = positions.map(pos => {
+  const datasets = positions
+    .filter(pos => !hiddenPositions.has(pos))
+    .map(pos => {
     const sorted = warPlayers
       .filter(p => p.pos === pos && p.war > 0)
       .sort((a,b) => b.war - a.war)

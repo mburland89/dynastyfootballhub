@@ -124,6 +124,7 @@ a{text-decoration:none;color:inherit}
 .footer p{font-size:12px;color:#333}
 .footer span{color:#c0392b}
 </style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 </head>
 <body>
 
@@ -203,6 +204,19 @@ a{text-decoration:none;color:inherit}
         <div style="font-size:13px;color:#555;margin-top:3px" id="results-subtitle"></div>
       </div>
       <button class="btn-outline" onclick="resetTool()">&#8592; New League</button>
+    </div>
+
+    <!-- WAR CURVE CHART -->
+    <div style="background:#161616;border:1px solid #1e1e1e;border-radius:12px;padding:1.5rem;margin-bottom:1.5rem;">
+      <div style="font-size:15px;font-weight:600;color:#fff;margin-bottom:0.4rem;">WAR Curve by Position</div>
+      <div style="font-size:12px;color:#555;margin-bottom:1rem;">Value drop-off by position rank — hover to see player names</div>
+      <canvas id="war-chart" style="width:100%;max-height:300px;"></canvas>
+      <div style="display:flex;gap:1.5rem;margin-top:1rem;flex-wrap:wrap;">
+        <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:#888;"><div style="width:16px;height:3px;background:#63b3ed;border-radius:2px"></div>QB</div>
+        <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:#888;"><div style="width:16px;height:3px;background:#68d391;border-radius:2px"></div>RB</div>
+        <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:#888;"><div style="width:16px;height:3px;background:#f6ad55;border-radius:2px"></div>WR</div>
+        <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:#888;"><div style="width:16px;height:3px;background:#e87c73;border-radius:2px"></div>TE</div>
+      </div>
     </div>
 
     <div class="war-controls">
@@ -449,23 +463,24 @@ async function calculateWAR() {
     });
 
     // Calculate VF Score — cross-positional rank comparison
-    // Compare each player's WAR to the WAR of same-ranked players at other positions
-    // This naturally reflects league scoring — if RBs score more, RB1 beats WR1
+    // Only meaningful for players with positive WAR
     const positions = ['QB','RB','WR','TE'];
     
-    // Sort each position by WAR and assign position rank
+    // Sort each position by WAR descending and assign position rank
     const posSorted = {};
     positions.forEach(pos => {
       posSorted[pos] = playerWAR
-        .filter(p => p.pos === pos)
+        .filter(p => p.pos === pos && p.war > 0)
         .sort((a,b) => b.war - a.war);
       posSorted[pos].forEach((p, i) => p._posRank = i + 1);
     });
 
-    // For each player, find what the same position rank looks like at other positions
-    // VF Score = player's WAR relative to average WAR of same-ranked players at other positions
+    // For each player with positive WAR, compare to same-ranked players at other positions
     playerWAR.forEach(p => {
+      if (p.war <= 0) { p.vfScore = 0; return; }
+      
       const posRank = p._posRank;
+      if (!posRank) { p.vfScore = 0; return; }
       
       // Get WAR of same-ranked player at each other position
       const comparisons = positions
@@ -473,20 +488,20 @@ async function calculateWAR() {
         .map(pos => {
           const sameRanked = posSorted[pos][posRank - 1];
           return sameRanked ? sameRanked.war : 0;
-        });
+        })
+        .filter(w => w > 0); // only compare to valid players
+      
+      if (comparisons.length === 0) { p.vfScore = 50; return; }
       
       const avgComparison = comparisons.reduce((s,v) => s+v, 0) / comparisons.length;
-      
-      // VF Score = how much better is this player vs same-ranked players at other positions
-      // Scale to 50 baseline: 50 = same as peers, >50 = better than peers at same rank
       const diff = p.war - avgComparison;
-      const maxDiff = 15; // scale factor
+      const maxDiff = 10;
       p.vfScore = parseFloat((50 + (diff / maxDiff) * 25).toFixed(1));
-      // Clamp between 0 and 100
       p.vfScore = Math.max(0, Math.min(100, p.vfScore));
     });
 
-    playerWAR.sort((a,b) => b.vfScore - a.vfScore);
+    // Sort overall by WAR (most accurate cross-positional measure in your scoring system)
+    playerWAR.sort((a,b) => b.war - a.war);
     warPlayers = playerWAR;
 
     const leagueName = selectedLeague.name || 'Your League';
@@ -494,6 +509,7 @@ async function calculateWAR() {
     document.getElementById('results-subtitle').textContent = `${leagueName} · ${leagueSettings.teams} teams · Based on 2025 NFL stats in your scoring system`;
     document.getElementById('results-section').style.display = 'block';
     renderWAR();
+    renderWARChart();
     document.getElementById('results-section').scrollIntoView({behavior:'smooth', block:'start'});
 
   } catch(e) {
@@ -575,7 +591,7 @@ function renderWAR() {
   if (warTab !== 'all') list = list.filter(p => p.pos === warTab);
   if (q) list = list.filter(p => p.name.toLowerCase().includes(q) || p.team.toLowerCase().includes(q));
   if (warTab === 'all') {
-    list.sort((a, b) => b.vfScore - a.vfScore);
+    list.sort((a, b) => b.war - a.war);
   } else {
     list.sort((a, b) => b.war - a.war);
   }
@@ -626,6 +642,7 @@ function setWarTab(tab) {
 }
 
 function resetTool() {
+  if (warChart) { warChart.destroy(); warChart = null; }
   selectedLeague = null;
   leagueSettings = null;
   warPlayers = [];
@@ -653,6 +670,77 @@ function setStatus(id, type, msg) {
 document.getElementById('username-input').addEventListener('keydown', e => {
   if (e.key === 'Enter') fetchLeagues();
 });
+
+// ── WAR CURVE CHART ──
+let warChart = null;
+
+function renderWARChart() {
+  const positions = ['QB','RB','WR','TE'];
+  const colors = { QB:'#63b3ed', RB:'#68d391', WR:'#f6ad55', TE:'#e87c73' };
+  const maxRank = 50;
+
+  const datasets = positions.map(pos => {
+    const sorted = warPlayers
+      .filter(p => p.pos === pos && p.war > 0)
+      .sort((a,b) => b.war - a.war)
+      .slice(0, maxRank);
+
+    return {
+      label: pos,
+      data: sorted.map((p, i) => ({ x: i + 1, y: p.war, name: p.name })),
+      borderColor: colors[pos],
+      backgroundColor: colors[pos] + '22',
+      borderWidth: 2,
+      pointRadius: 4,
+      pointHoverRadius: 7,
+      pointBackgroundColor: colors[pos],
+      tension: 0.3,
+      fill: false,
+    };
+  });
+
+  const canvas = document.getElementById('war-chart');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+
+  if (warChart) { warChart.destroy(); warChart = null; }
+
+  warChart = new Chart(ctx, {
+    type: 'line',
+    data: { datasets },
+    options: {
+      responsive: true,
+      interaction: { mode: 'nearest', intersect: true },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#1a1a1a',
+          borderColor: '#333',
+          borderWidth: 1,
+          titleColor: '#fff',
+          bodyColor: '#aaa',
+          callbacks: {
+            title: items => items[0]?.raw?.name || '',
+            label: item => `WAR: ${item.raw.y > 0 ? '+' : ''}${item.raw.y}  |  Pos Rank: ${item.raw.x}`,
+          }
+        }
+      },
+      scales: {
+        x: {
+          type: 'linear',
+          title: { display: true, text: 'Position Rank', color: '#555', font: { size: 11 } },
+          ticks: { color: '#555', stepSize: 3 },
+          grid: { color: '#1a1a1a' },
+        },
+        y: {
+          title: { display: true, text: 'WAR', color: '#555', font: { size: 11 } },
+          ticks: { color: '#555' },
+          grid: { color: '#1a1a1a' },
+        }
+      }
+    }
+  });
+}
 </script>
 </body>
 </html>

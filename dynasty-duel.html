@@ -332,20 +332,59 @@ function pickTwoClose(players) {
   return [playerA, playerB];
 }
 
-function buildTradePackage(players) {
-  // Build a 1-2 player package
-  const sorted = [...players].sort((a,b) => b.sfValue - a.sfValue).slice(0, 100);
-  const anchor = sorted[Math.floor(Math.random() * 40)]; // pick from top 40
+function buildBalancedPackages(players) {
+  const sorted = [...players].sort((a,b) => b.sfValue - a.sfValue).slice(0, 120);
   
-  // Sometimes add a second player to make it interesting
-  const addSecond = Math.random() > 0.4;
-  if (addSecond) {
-    // Second player worth roughly 30-60% of anchor
-    const targetVal = anchor.sfValue * (0.3 + Math.random() * 0.3);
-    const second = sorted.find(p => p.name !== anchor.name && Math.abs(p.sfValue - targetVal) < targetVal * 0.3);
-    return second ? [anchor, second] : [anchor];
+  // Pick an anchor player from top 80
+  const anchorA = sorted[Math.floor(Math.random() * 80)];
+  const targetTotal = anchorA.sfValue;
+  
+  // Build Package A — sometimes 1 player, sometimes 2
+  let pkgA = [anchorA];
+  if (Math.random() > 0.5) {
+    // Add a second player to make it a 2-for-1 situation
+    const secondVal = targetTotal * (0.25 + Math.random() * 0.35);
+    const second = sorted.find(p => p.name !== anchorA.name && Math.abs(p.sfValue - secondVal) < secondVal * 0.4);
+    if (second) pkgA = [anchorA, second];
   }
-  return [anchor];
+  
+  const totalA = packageValue(pkgA);
+  
+  // Build Package B — match total value of Package A within 15%
+  const margin = totalA * 0.15;
+  let pkgB = [];
+  
+  // Try single player first
+  const singleMatch = sorted.find(p => 
+    !pkgA.find(x=>x.name===p.name) && 
+    Math.abs(p.sfValue - totalA) < margin
+  );
+  
+  if (singleMatch) {
+    pkgB = [singleMatch];
+  } else {
+    // Try two player package that matches total
+    const candidates = sorted.filter(p => !pkgA.find(x=>x.name===p.name));
+    for (let i = 0; i < candidates.length; i++) {
+      for (let j = i+1; j < candidates.length; j++) {
+        const combo = candidates[i].sfValue + candidates[j].sfValue;
+        if (Math.abs(combo - totalA) < margin) {
+          pkgB = [candidates[i], candidates[j]];
+          break;
+        }
+      }
+      if (pkgB.length > 0) break;
+    }
+    // Fallback — just find closest single player
+    if (pkgB.length === 0) {
+      const closest = candidates.reduce((best, p) => 
+        Math.abs(p.sfValue - totalA) < Math.abs(best.sfValue - totalA) ? p : best
+      );
+      pkgB = [closest];
+    }
+  }
+  
+  return { pkgA, pkgB };
 }
 
 function packageValue(pkg) {
@@ -366,10 +405,9 @@ function loadMatchup() {
   let pkgA, pkgB;
 
   if (currentMode === 'trades') {
-    pkgA = buildTradePackage(players);
-    pkgB = buildTradePackage(players);
-    // Make sure they're different
-    while (pkgB[0]?.name === pkgA[0]?.name) pkgB = buildTradePackage(players);
+    const balanced = buildBalancedPackages(players);
+    pkgA = balanced.pkgA;
+    pkgB = balanced.pkgB;
   } else {
     const [a, b] = pickTwoClose(players);
     pkgA = [a]; pkgB = [b];

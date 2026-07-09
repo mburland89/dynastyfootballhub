@@ -149,7 +149,7 @@ a{text-decoration:none;color:inherit}
 <div class="main">
 
   <div class="disclaimer">
-    <strong>WAR</strong> — how much a player outscored the replacement-level player at their position in your exact league settings. Higher = more dominant at their position. &nbsp;|&nbsp; <strong>VF Score</strong> — cross-positional value normalized for scarcity. 50 = league average, 60+ = elite, 70+ = historic. Accounts for how scarce elite production is at each position — a TE1 who dominates may score higher than an RB1 who has more competition behind them.
+    <strong>WAR</strong> — how much a player outscored the replacement-level player at their position in your exact league settings. &nbsp;|&nbsp; <strong>VF Score</strong> — cross-positional value that accounts for your league's scoring environment. Compares each player's WAR to same-ranked players at other positions. 50 = same as peers at that rank, 75+ = elite, 25- = below peers. In a carry-bonus league, RBs naturally score higher WAR — VF Score reflects that reality.
   </div>
 
   <!-- STEP 1: Username -->
@@ -448,27 +448,42 @@ async function calculateWAR() {
       p.war = parseFloat(((p.pts - replacementLevel[p.pos]) / 10).toFixed(2));
     });
 
-    // Calculate VF Score — positional scarcity normalized
-    // Limit to top 50 per position to equalize pool sizes and remove distortion
+    // Calculate VF Score — cross-positional rank comparison
+    // Compare each player's WAR to the WAR of same-ranked players at other positions
+    // This naturally reflects league scoring — if RBs score more, RB1 beats WR1
     const positions = ['QB','RB','WR','TE'];
-    const posStats = {};
+    
+    // Sort each position by WAR and assign position rank
+    const posSorted = {};
     positions.forEach(pos => {
-      const top50 = playerWAR
-        .filter(p => p.pos === pos && p.war > 0)
-        .sort((a,b) => b.war - a.war)
-        .slice(0, 50);
-      if (top50.length === 0) return;
-      const wars = top50.map(p => p.war);
-      const mean = wars.reduce((s,v) => s+v, 0) / wars.length;
-      const variance = wars.reduce((s,v) => s + Math.pow(v-mean,2), 0) / wars.length;
-      const std = Math.sqrt(variance);
-      posStats[pos] = { mean, std };
+      posSorted[pos] = playerWAR
+        .filter(p => p.pos === pos)
+        .sort((a,b) => b.war - a.war);
+      posSorted[pos].forEach((p, i) => p._posRank = i + 1);
     });
 
+    // For each player, find what the same position rank looks like at other positions
+    // VF Score = player's WAR relative to average WAR of same-ranked players at other positions
     playerWAR.forEach(p => {
-      const { mean, std } = posStats[p.pos] || { mean: 0, std: 1 };
-      const z = std > 0 ? (p.war - mean) / std : 0;
-      p.vfScore = parseFloat((z * 10 + 50).toFixed(1));
+      const posRank = p._posRank;
+      
+      // Get WAR of same-ranked player at each other position
+      const comparisons = positions
+        .filter(pos => pos !== p.pos)
+        .map(pos => {
+          const sameRanked = posSorted[pos][posRank - 1];
+          return sameRanked ? sameRanked.war : 0;
+        });
+      
+      const avgComparison = comparisons.reduce((s,v) => s+v, 0) / comparisons.length;
+      
+      // VF Score = how much better is this player vs same-ranked players at other positions
+      // Scale to 50 baseline: 50 = same as peers, >50 = better than peers at same rank
+      const diff = p.war - avgComparison;
+      const maxDiff = 15; // scale factor
+      p.vfScore = parseFloat((50 + (diff / maxDiff) * 25).toFixed(1));
+      // Clamp between 0 and 100
+      p.vfScore = Math.max(0, Math.min(100, p.vfScore));
     });
 
     playerWAR.sort((a,b) => b.vfScore - a.vfScore);

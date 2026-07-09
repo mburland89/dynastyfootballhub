@@ -395,8 +395,9 @@ async function calculateWAR() {
     // Fetch weekly NFL stats for all 18 weeks in parallel
     // Using the weekly stats endpoint which gives raw NFL stats per player
     btn.innerHTML = '<span class="loading-spinner"></span>Loading 2025 weekly stats...';
-    // Always pull all 18 NFL weeks — WAR reflects full NFL season production
-    const totalWeeks = 18;
+    // Pull weeks 1-17 only — week 18 excluded as most fantasy leagues don't play
+    // and week 18 often has rested starters/meaningless games that skew stats
+    const totalWeeks = 17;
     
     const weekPromises = [];
     for (let week = 1; week <= totalWeeks; week++) {

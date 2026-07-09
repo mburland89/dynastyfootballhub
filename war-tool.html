@@ -270,12 +270,9 @@ async function fetchLeagues() {
     const user = await userRes.json();
     if (!user || !user.user_id) throw new Error('User not found');
     
-    // Get leagues for both 2025 and 2026 (covers new startups drafted in offseason)
-    const [leagues2025, leagues2026] = await Promise.all([
-      fetch(`https://api.sleeper.app/v1/user/${user.user_id}/leagues/nfl/2025`).then(r => r.json()).catch(() => []),
-      fetch(`https://api.sleeper.app/v1/user/${user.user_id}/leagues/nfl/2026`).then(r => r.json()).catch(() => [])
-    ]);
-    const leagues = [...(leagues2025 || []), ...(leagues2026 || [])];
+    // Get 2026 leagues — covers both carried over leagues and new startups
+    const leaguesRes = await fetch(`https://api.sleeper.app/v1/user/${user.user_id}/leagues/nfl/2026`);
+    const leagues = await leaguesRes.json();
     
     if (!leagues || leagues.length === 0) throw new Error('No leagues found');
     
@@ -499,7 +496,7 @@ async function calculateWAR() {
 
     const leagueName = selectedLeague.name || 'Your League';
     document.getElementById('results-title').textContent = `2025 WAR Rankings`;
-    document.getElementById('results-subtitle').textContent = `${leagueName} · ${leagueSettings.teams} teams · Based on 2025 NFL stats in your scoring system`;
+    document.getElementById('results-subtitle').textContent = `${leagueName} · ${leagueSettings.teams} teams · Based on 2025 NFL stats in your league's scoring format`;
     document.getElementById('results-section').style.display = 'block';
     renderWAR();
     renderWARChart();

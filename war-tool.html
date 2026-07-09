@@ -549,7 +549,7 @@ function calcReplacementLevel(players) {
     byPos[pos] = players.filter(p => p.pos === pos).sort((a,b) => b.pts - a.pts);
   });
 
-  // Step 1: Fill mandatory starting spots first
+  // Step 1: Mandatory starting spots
   const mandatoryStarters = {
     QB: sc.numQB * teams,
     RB: sc.numRB * teams,
@@ -557,49 +557,53 @@ function calcReplacementLevel(players) {
     TE: sc.numTE * teams,
   };
 
-  // Step 2: Simulate flex spot allocation
-  // Each team fills mandatory spots first, then fills flex with best remaining player
-  const totalFlex = (sc.numFlex + sc.numSF) * teams;
-  
-  // Track which players are "used" as mandatory starters
-  const usedCounts = { QB: 0, RB: 0, WR: 0, TE: 0 };
-  
-  // Collect remaining players after mandatory spots filled
+  // Step 2: Simulate FLEX spots — best remaining RB/WR/TE fill these
   const flexPool = [];
-  ['QB','RB','WR','TE'].forEach(pos => {
-    const mandatory = mandatoryStarters[pos];
-    // Players beyond mandatory spots are available for flex
-    byPos[pos].slice(mandatory).forEach(p => flexPool.push(p));
+  ['RB','WR','TE'].forEach(pos => {
+    byPos[pos].slice(mandatoryStarters[pos]).forEach(p => flexPool.push(p));
   });
-  
-  // Sort flex pool by points — best available fills flex spots
   flexPool.sort((a,b) => b.pts - a.pts);
   
-  // Count how many of each position fill flex spots
   const flexCounts = { QB: 0, RB: 0, WR: 0, TE: 0 };
-  flexPool.slice(0, totalFlex).forEach(p => flexCounts[p.pos]++);
+  flexPool.slice(0, sc.numFlex * teams).forEach(p => flexCounts[p.pos]++);
 
-  // Step 3: Total starters per position = mandatory + flex
+  // Step 3: Simulate SUPERFLEX spots — best remaining QB fills most SF spots
+  // In practice SF is almost always a QB in a 1QB+1SF league
+  // So we allocate SF spots to QBs first, then best remaining skill player
+  const sfPool = [];
+  // QBs beyond mandatory QB spots
+  byPos['QB'].slice(mandatoryStarters.QB).forEach(p => sfPool.push({...p, _sfPos:'QB'}));
+  // Best remaining RB/WR/TE after flex
+  const usedFlex = sc.numFlex * teams;
+  flexPool.slice(usedFlex).forEach(p => sfPool.push({...p, _sfPos: p.pos}));
+  sfPool.sort((a,b) => b.pts - a.pts);
+  
+  const sfCounts = { QB: 0, RB: 0, WR: 0, TE: 0 };
+  sfPool.slice(0, sc.numSF * teams).forEach(p => sfCounts[p._sfPos]++);
+
+  // Step 4: Total starters per position
   const totalStarters = {
-    QB: mandatoryStarters.QB + flexCounts.QB,
-    RB: mandatoryStarters.RB + flexCounts.RB,
-    WR: mandatoryStarters.WR + flexCounts.WR,
-    TE: mandatoryStarters.TE + flexCounts.TE,
+    QB: mandatoryStarters.QB + sfCounts.QB,
+    RB: mandatoryStarters.RB + flexCounts.RB + sfCounts.RB,
+    WR: mandatoryStarters.WR + flexCounts.WR + sfCounts.WR,
+    TE: mandatoryStarters.TE + flexCounts.TE + sfCounts.TE,
   };
 
-  // Step 4: Replacement level = average of players just outside total starter threshold
+  // Step 5: Replacement level = average of players just outside starter threshold
   const replacement = {};
   ['QB','RB','WR','TE'].forEach(pos => {
     const cutoff = totalStarters[pos];
-    const borderPlayers = byPos[pos].slice(Math.max(0, cutoff - 1), cutoff + 3);
-    replacement[pos] = borderPlayers.length > 0 
-      ? borderPlayers.reduce((s,p) => s + p.pts, 0) / borderPlayers.length 
+    const border = byPos[pos].slice(Math.max(0, cutoff - 1), cutoff + 3);
+    replacement[pos] = border.length > 0
+      ? border.reduce((s,p) => s + p.pts, 0) / border.length
       : 0;
   });
 
-  // Store for VF Score calculation
   leagueSettings._totalStarters = totalStarters;
   leagueSettings._replacement = replacement;
+
+  console.log('Total starters:', totalStarters);
+  console.log('Replacement levels:', replacement);
 
   return replacement;
 }

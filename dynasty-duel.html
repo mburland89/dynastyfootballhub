@@ -349,21 +349,20 @@ function buildBalancedPackages(players) {
   }
   
   const totalA = packageValue(pkgA);
-  
-  // Build Package B — match total value of Package A within 15%
-  const margin = totalA * 0.15;
+  const adjustedA = adjustedPackageValue(pkgA, [{}]); // estimate with 1 piece opposing
+  const margin = adjustedA * 0.18;
   let pkgB = [];
   
-  // Try single player first
+  // Try single player first — match adjusted value of Package A
   const singleMatch = sorted.find(p => 
     !pkgA.find(x=>x.name===p.name) && 
-    Math.abs(p.sfValue - totalA) < margin
+    Math.abs(p.sfValue - adjustedA) < margin
   );
   
   if (singleMatch) {
     pkgB = [singleMatch];
   } else {
-    // Try two player package that matches total
+    // Try two player package
     const candidates = sorted.filter(p => !pkgA.find(x=>x.name===p.name));
     for (let i = 0; i < candidates.length; i++) {
       for (let j = i+1; j < candidates.length; j++) {
@@ -387,8 +386,29 @@ function buildBalancedPackages(players) {
   return { pkgA, pkgB };
 }
 
+function getStudPremiumDuel(player, opposingPieces) {
+  if (!player || player.pos === 'PK') return 0;
+  const v = player.sfValue;
+  let baseRate;
+  if (v >= 9000) baseRate = 0.20;
+  else if (v >= 6000) baseRate = 0.12;
+  else if (v >= 3000) baseRate = 0.05;
+  else return 0;
+  const perPieceRate = v >= 9000 ? 0.15 : v >= 6000 ? 0.11 : 0.07;
+  const extraPieces = Math.max(0, opposingPieces - 1);
+  return Math.round(v * (baseRate + extraPieces * perPieceRate));
+}
+
 function packageValue(pkg) {
   return pkg.reduce((s,p) => s+p.sfValue, 0);
+}
+
+function adjustedPackageValue(pkg, opposingPkg) {
+  const raw = packageValue(pkg);
+  if (currentMode !== 'trades') return raw;
+  const stud = pkg.filter(p=>p.pos!=='PK').sort((a,b)=>b.sfValue-a.sfValue)[0];
+  if (!stud) return raw;
+  return raw + getStudPremiumDuel(stud, opposingPkg.length);
 }
 
 function loadMatchup() {
@@ -419,8 +439,8 @@ function loadMatchup() {
 
 function renderMatchup() {
   const { pkgA, pkgB } = currentMatchup;
-  const valA = packageValue(pkgA);
-  const valB = packageValue(pkgB);
+  const valA = adjustedPackageValue(pkgA, pkgB);
+  const valB = adjustedPackageValue(pkgB, pkgA);
 
   document.getElementById('matchup-area').innerHTML = `
     <div class="matchup">
@@ -468,8 +488,8 @@ async function vote(side) {
   revealed = true;
 
   const { pkgA, pkgB } = currentMatchup;
-  const valA = packageValue(pkgA);
-  const valB = packageValue(pkgB);
+  const valA = adjustedPackageValue(pkgA, pkgB);
+  const valB = adjustedPackageValue(pkgB, pkgA);
   const vfWinner = valA >= valB ? 'a' : 'b';
   const userAgreed = side === vfWinner;
 

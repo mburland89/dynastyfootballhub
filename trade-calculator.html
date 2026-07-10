@@ -593,46 +593,51 @@ function renderSide(side, players) {
   }).join('');
 }
 
-function getStudPremium(p) {
-  if (p.pos === 'PK') return 0;
-  const v = getPlayerValue(p);
-  if (v >= 9000) return 0.15;
-  if (v >= 6000) return 0.08;
-  if (v >= 3000) return 0.02;
-  return 0;
-}
+function getStudPremium(player, opposingPieces) {
+  if (!player || player.pos === 'PK') return 0;
+  const v = getPlayerValue(player);
+  
+  // Base rate by tier
+  let baseRate;
+  if (v >= 9000) baseRate = 0.20;       // Elite
+  else if (v >= 6000) baseRate = 0.12;  // Good starter
+  else if (v >= 3000) baseRate = 0.05;  // Depth
+  else return 0;
 
-function getBestPlayer(players) {
-  return players
-    .filter(p => p.pos !== 'PK')
-    .sort((a,b) => getPlayerValue(b) - getPlayerValue(a))[0] || null;
+  // Each additional piece on opposing side adds 12% (elite), 8% (good), 4% (depth)
+  const perPieceRate = v >= 9000 ? 0.12 : v >= 6000 ? 0.08 : 0.04;
+  const extraPieces = Math.max(0, opposingPieces - 1);
+  const totalRate = baseRate + (extraPieces * perPieceRate);
+
+  return Math.round(v * totalRate);
 }
 
 function updateTrade() {
   const rawA = tradeA.reduce((s,p) => s + getPlayerValue(p), 0);
   const rawB = tradeB.reduce((s,p) => s + getPlayerValue(p), 0);
 
-  // Find the single best player across both sides — that side gets the premium
-  const bestA = getBestPlayer(tradeA);
-  const bestB = getBestPlayer(tradeB);
+  // Find the single best player across both sides
+  const bestA = tradeA.filter(p=>p.pos!=='PK').sort((a,b)=>getPlayerValue(b)-getPlayerValue(a))[0] || null;
+  const bestB = tradeB.filter(p=>p.pos!=='PK').sort((a,b)=>getPlayerValue(b)-getPlayerValue(a))[0] || null;
   const bestAVal = bestA ? getPlayerValue(bestA) : 0;
   const bestBVal = bestB ? getPlayerValue(bestB) : 0;
 
-  // The side with the best player gets an adjustment added to their raw value
+  // The side with the best player gets adjustment — premium grows with opposing pieces
   let adjA = rawA, adjB = rawB;
   let adjustedSide = null, adjustedPlayer = null, adjustmentAmt = 0, adjustmentRate = 0;
 
-  if (bestAVal > bestBVal && tradeA.length > 0 && tradeB.length > 0) {
-    // Team A has the best player — they get the stud premium
-    const rate = getStudPremium(bestA);
-    adjustmentAmt = Math.round(bestAVal * rate);
-    adjA = rawA + adjustmentAmt;
-    adjustedSide = 'A'; adjustedPlayer = bestA; adjustmentRate = rate;
-  } else if (bestBVal > bestAVal && tradeA.length > 0 && tradeB.length > 0) {
-    const rate = getStudPremium(bestB);
-    adjustmentAmt = Math.round(bestBVal * rate);
-    adjB = rawB + adjustmentAmt;
-    adjustedSide = 'B'; adjustedPlayer = bestB; adjustmentRate = rate;
+  if (tradeA.length > 0 && tradeB.length > 0) {
+    if (bestAVal > bestBVal) {
+      adjustmentAmt = getStudPremium(bestA, tradeB.length);
+      adjA = rawA + adjustmentAmt;
+      adjustedSide = 'A'; adjustedPlayer = bestA;
+      adjustmentRate = adjustmentAmt / getPlayerValue(bestA);
+    } else if (bestBVal > bestAVal) {
+      adjustmentAmt = getStudPremium(bestB, tradeA.length);
+      adjB = rawB + adjustmentAmt;
+      adjustedSide = 'B'; adjustedPlayer = bestB;
+      adjustmentRate = adjustmentAmt / getPlayerValue(bestB);
+    }
   }
 
   document.getElementById('value-a').textContent = rawA.toLocaleString();
@@ -682,8 +687,10 @@ function updateTrade() {
   const adjSection = document.getElementById('adjustment-section');
   if (adjustedSide && adjustmentAmt > 0) {
     adjSection.style.display = 'block';
-    document.getElementById('adjustment-text').textContent = 
-      `Team ${adjustedSide} is trading away ${adjustedPlayer.name} — stud premium applied (+${Math.round(adjustmentRate*100)}%)`;
+    const opposingPieces = adjustedSide === 'A' ? tradeB.length : tradeA.length;
+    const ratePct = Math.round(adjustmentRate * 100);
+    document.getElementById('adjustment-text').innerHTML = 
+      `<strong style="color:#f0f0f0">${adjustedPlayer.name}</strong> stud premium · ${opposingPieces} piece${opposingPieces !== 1 ? 's' : ''} on opposing side · <span style="color:#f6ad55">+${ratePct}% applied</span>`;
     document.getElementById('adjustment-amount').textContent = `+${adjustmentAmt.toLocaleString()}`;
   } else {
     adjSection.style.display = 'none';

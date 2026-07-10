@@ -604,8 +604,8 @@ function getStudPremium(player, opposingPieces) {
   else if (v >= 3000) baseRate = 0.05;  // Depth
   else return 0;
 
-  // Each additional piece on opposing side adds 12% (elite), 8% (good), 4% (depth)
-  const perPieceRate = v >= 9000 ? 0.12 : v >= 6000 ? 0.08 : 0.04;
+  // Each additional piece on opposing side adds 15% (elite), 11% (good), 7% (depth)
+  const perPieceRate = v >= 9000 ? 0.15 : v >= 6000 ? 0.11 : 0.07;
   const extraPieces = Math.max(0, opposingPieces - 1);
   const totalRate = baseRate + (extraPieces * perPieceRate);
 

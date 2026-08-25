@@ -175,12 +175,19 @@ a{text-decoration:none;color:inherit}
   <div class="nav-links">
     <a onclick="showPage('home')" id="nav-home" class="active">Home</a>
     <a onclick="showPage('episodes')" id="nav-episodes">Episodes</a>
-    <a onclick="showPage('rankings')" id="nav-rankings">Rankings</a>
+    <div class="nav-dropdown">
+      <button class="nav-dropdown-toggle">Rankings</button>
+      <div class="nav-dropdown-menu">
+        <a onclick="showPage('rankings')" id="nav-rankings">🏈 Dynasty Rankings</a>
+        <a href="/redraft-rankings.html">📋 Redraft Rankings</a>
+      </div>
+    </div>
     <div class="nav-dropdown">
       <button class="nav-dropdown-toggle">Tools</button>
       <div class="nav-dropdown-menu">
         <a href="/war-tool.html">⚔️ VF WAR Tool</a>
-        <a href="/trade-calculator.html">🔄 Trade Calculator</a>
+        <a href="/trade-calculator.html">🔄 Dynasty Calculator</a>
+        <a href="/redraft-calculator.html">🔄 Redraft Calculator</a>
         <a href="/dynasty-duel.html">🏈 Dynasty Duel</a>
       </div>
     </div>

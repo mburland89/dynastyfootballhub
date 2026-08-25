@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Redraft Rankings | Dynasty Football Hub</title>
+<meta name="description" content="Victory Formation 2025 Redraft Rankings — PPR, Half PPR, Superflex, TEP. Customize for your league settings." />
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#0a0a0a;color:#f0f0f0;min-height:100vh}
+a{text-decoration:none;color:inherit}
+
+.nav{position:sticky;top:0;z-index:100;height:64px;background:rgba(10,10,10,0.97);border-bottom:1px solid #1e1e1e;display:flex;align-items:center;justify-content:space-between;padding:0 2rem}
+.nav-logo span{font-size:17px;font-weight:700;letter-spacing:1px;color:#f0f0f0;text-transform:uppercase}
+.nav-links{display:flex;gap:2rem;align-items:center}
+.nav-links a{font-size:14px;font-weight:500;color:#666;text-decoration:none;transition:color 0.2s}
+.nav-links a:hover{color:#c0392b}
+.nav-dropdown{position:relative}
+.nav-dropdown-toggle{font-size:14px;font-weight:500;color:#666;cursor:pointer;display:flex;align-items:center;gap:5px;background:none;border:none;font-family:inherit}
+.nav-dropdown-toggle::after{content:'▾';font-size:10px}
+.nav-dropdown-menu{position:absolute;top:100%;left:50%;transform:translateX(-50%);background:#111;border:1px solid #1e1e1e;border-radius:8px;overflow:hidden;min-width:180px;display:none;box-shadow:0 8px 24px rgba(0,0,0,0.5);z-index:200;padding-top:12px}
+.nav-dropdown-menu::before{content:'';position:absolute;top:0;left:0;right:0;height:12px;background:transparent}
+.nav-dropdown:hover .nav-dropdown-menu{display:block}
+.nav-dropdown-menu a{display:block;padding:10px 16px;font-size:13px;color:#888;border-bottom:1px solid #1a1a1a;white-space:nowrap}
+.nav-dropdown-menu a:hover{background:#1a1a1a;color:#c0392b}
+.nav-yt{display:flex;align-items:center;gap:8px;background:#c0392b;color:#fff;font-size:13px;font-weight:600;padding:9px 16px;border-radius:6px;border:none;cursor:pointer}
+
+.page-header{background:linear-gradient(180deg,#140303 0%,#0a0a0a 100%);border-bottom:1px solid #1e1e1e;padding:3rem 2rem 2.5rem;text-align:center}
+.page-header .tag{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:#c0392b;margin-bottom:0.8rem}
+.page-header h1{font-size:38px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:#fff;margin-bottom:0.5rem}
+.page-header h1 span{color:#c0392b}
+.page-header p{font-size:15px;color:#777;max-width:520px;margin:0 auto}
+
+.main{max-width:1000px;margin:0 auto;padding:2rem}
+
+/* SETTINGS */
+.settings-bar{background:#161616;border:1px solid #1e1e1e;border-radius:10px;padding:1.2rem 1.5rem;margin-bottom:1.5rem;display:flex;align-items:center;flex-wrap:wrap;gap:1.5rem}
+.setting-group{display:flex;flex-direction:column;gap:6px}
+.setting-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.7px;color:#555}
+.toggle-row{display:flex;gap:6px;flex-wrap:wrap}
+.tog{padding:7px 14px;border-radius:6px;border:1px solid #2a2a2a;background:#0d0d0d;color:#555;font-size:13px;font-weight:600;cursor:pointer;transition:all 0.15s;user-select:none}
+.tog:hover{border-color:#555;color:#888}
+.tog.on{background:rgba(192,57,43,0.15);border-color:#c0392b;color:#e87c73}
+.sdiv{width:1px;height:40px;background:#1e1e1e;align-self:center}
+.sheet-note{font-size:11px;color:#444;margin-left:auto}
+
+/* CONTROLS */
+.controls-bar{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:1rem}
+.pos-tabs{display:flex;gap:6px;flex-wrap:wrap}
+.pos-tab{padding:7px 16px;border-radius:6px;border:1px solid #2a2a2a;background:#161616;color:#555;font-size:13px;font-weight:600;cursor:pointer;transition:all 0.15s}
+.pos-tab.active{background:#c0392b;border-color:#c0392b;color:#fff}
+.search-wrap{position:relative}
+.search-input{background:#161616;border:1px solid #2a2a2a;border-radius:7px;padding:8px 14px 8px 34px;font-size:13px;color:#f0f0f0;outline:none;font-family:inherit;width:200px}
+.search-input::placeholder{color:#444}
+.search-icon{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:#444;font-size:13px}
+.results-count{font-size:12px;color:#444}
+
+/* TABLE */
+.rt-wrap{border-radius:10px;overflow:hidden;border:1px solid #1e1e1e}
+.rt-head{display:grid;grid-template-columns:50px 1fr 70px 60px 60px 70px;padding:9px 16px;background:#181818;border-bottom:1px solid #1e1e1e}
+.rt-head span{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.7px;color:#444}
+.rt-head span:nth-child(n+3){text-align:center}
+.rt-row{display:grid;grid-template-columns:50px 1fr 70px 60px 60px 70px;padding:11px 16px;border-bottom:1px solid #111;align-items:center;transition:background 0.1s}
+.rt-row:last-child{border-bottom:none}
+.rt-row:hover{background:#111}
+
+.rt-rank{font-size:15px;font-weight:800;color:#333}
+.rt-rank.gold{color:#f6ad55}
+.rt-rank.silver{color:#aaa}
+.rt-rank.bronze{color:#cd7f32}
+.rt-player{display:flex;flex-direction:column;gap:1px}
+.rt-name{font-size:14px;font-weight:600;color:#f0f0f0}
+.rt-team{font-size:12px;color:#444}
+
+.pos-badge{font-size:11px;font-weight:700;padding:2px 7px;border-radius:4px;text-align:center;display:inline-block}
+.pos-QB{background:rgba(99,179,237,0.12);color:#63b3ed}
+.pos-RB{background:rgba(104,211,145,0.12);color:#68d391}
+.pos-WR{background:rgba(246,173,85,0.12);color:#f6ad55}
+.pos-TE{background:rgba(192,57,43,0.18);color:#e87c73}
+
+.tag-badge{font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;margin-left:4px}
+.tag-R{background:rgba(104,211,145,0.15);color:#68d391}
+
+.tier-header{display:flex;align-items:center;gap:12px;padding:10px 16px;background:#0f0f0f;border-bottom:1px solid #111}
+.tier-name{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#c0392b;white-space:nowrap}
+.tier-line{flex:1;height:1px;background:#1a1a1a}
+.tier-count{font-size:11px;color:#333;white-space:nowrap}
+
+.empty-state{padding:4rem;text-align:center;color:#333;font-size:14px}
+
+.footer{background:#080808;border-top:1px solid #1e1e1e;padding:1.5rem 2rem;text-align:center;margin-top:3rem}
+.footer p{font-size:12px;color:#333}
+.footer span{color:#c0392b}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <a class="nav-logo" href="/"><span>Victory Formation</span></a>
+  <div class="nav-links">
+    <a href="/">Home</a>
+    <a href="/" style="color:#c0392b">Redraft Rankings</a>
+    <a href="/">Dynasty Rankings</a>
+    <div class="nav-dropdown">
+      <button class="nav-dropdown-toggle">Tools</button>
+      <div class="nav-dropdown-menu">
+        <a href="/war-tool.html">⚔️ VF WAR Tool</a>
+        <a href="/trade-calculator.html">🔄 Dynasty Calculator</a>
+        <a href="/redraft-calculator.html">🔄 Redraft Calculator</a>
+        <a href="/dynasty-duel.html">🏈 Dynasty Duel</a>
+      </div>
+    </div>
+    <a href="/">Support Us</a>
+  </div>
+  <a href="https://www.youtube.com/@victoryformation8924" target="_blank" class="nav-yt">&#9654; YouTube</a>
+</nav>
+
+<div class="page-header">
+  <div class="tag">Victory Formation</div>
+  <h1>2025 <span>Redraft</span> Rankings</h1>
+  <p>Customize for your league settings — PPR, Half PPR, Superflex, and TE Premium. Rankings update instantly.</p>
+</div>
+
+<div class="main">
+
+  <div class="settings-bar">
+    <div class="setting-group">
+      <div class="setting-label">Scoring</div>
+      <div class="toggle-row">
+        <div class="tog on" id="sc-ppr" onclick="setSetting('sc','ppr')">PPR</div>
+        <div class="tog" id="sc-half" onclick="setSetting('sc','half')">Half PPR</div>
+      </div>
+    </div>
+    <div class="sdiv"></div>
+    <div class="setting-group">
+      <div class="setting-label">QB Format</div>
+      <div class="toggle-row">
+        <div class="tog on" id="qb-1qb" onclick="setSetting('qb','1qb')">1QB</div>
+        <div class="tog" id="qb-sf" onclick="setSetting('qb','sf')">Superflex</div>
+      </div>
+    </div>
+    <div class="sdiv"></div>
+    <div class="setting-group">
+      <div class="setting-label">TE Premium</div>
+      <div class="toggle-row">
+        <div class="tog on" id="tep-off" onclick="setSetting('tep','off')">Off</div>
+        <div class="tog" id="tep-tep1" onclick="setSetting('tep','tep1')">TEP+</div>
+        <div class="tog" id="tep-tep2" onclick="setSetting('tep','tep2')">TEP++</div>
+        <div class="tog" id="tep-tep3" onclick="setSetting('tep','tep3')">TEP+++</div>
+      </div>
+    </div>
+    <div class="sheet-note">Live — updates from Google Sheet</div>
+  </div>
+
+  <div class="controls-bar">
+    <div class="pos-tabs">
+      <div class="pos-tab active" id="tab-all" onclick="setTab('all')">All</div>
+      <div class="pos-tab" id="tab-QB" onclick="setTab('QB')">QB</div>
+      <div class="pos-tab" id="tab-RB" onclick="setTab('RB')">RB</div>
+      <div class="pos-tab" id="tab-WR" onclick="setTab('WR')">WR</div>
+      <div class="pos-tab" id="tab-TE" onclick="setTab('TE')">TE</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px">
+      <span class="results-count" id="results-count"></span>
+      <div class="search-wrap">
+        <span class="search-icon">&#128269;</span>
+        <input class="search-input" type="text" placeholder="Search players..." id="search-input" oninput="renderTable()" />
+      </div>
+    </div>
+  </div>
+
+  <div class="rt-wrap" id="rankings-table">
+    <div class="empty-state">Loading rankings...</div>
+  </div>
+
+</div>
+
+<footer class="footer">
+  <p><span>Dynasty Football Hub</span> &middot; 2025 Redraft Rankings &middot; Victory Formation &middot; &copy; 2025</p>
+</footer>
+
+<script>
+const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTDcNHsV873O9Hemm3exidJoc1GwwBQM286lZ3V1EY02SrdcdG5ke9g8WFJ_9VBthuOEpAVxgoWZn5H/pub?gid=0&single=true&output=csv';
+
+const cfg = { sc: 'ppr', qb: '1qb', tep: 'off' };
+let currentTab = 'all';
+let players = [];
+
+function parseCSV(row) {
+  const cols = []; let cur = '', inQ = false;
+  for (let i = 0; i < row.length; i++) {
+    const c = row[i];
+    if (c === '"') { inQ = !inQ; }
+    else if (c === ',' && !inQ) { cols.push(cur.trim()); cur = ''; }
+    else { cur += c; }
+  }
+  cols.push(cur.trim()); return cols;
+}
+
+async function loadSheet() {
+  document.getElementById('rankings-table').innerHTML = '<div class="empty-state">Loading rankings...</div>';
+  try {
+    const res = await fetch(SHEET_URL);
+    const text = await res.text();
+    const rows = text.trim().split('\n').slice(1);
+    players = rows.map(row => {
+      const c = parseCSV(row);
+      return {
+        name:     c[0] || '',
+        team:     c[1] || '',
+        pos:      c[2] || '',
+        pprVal:   parseInt(c[3]) || 0,
+        halfVal:  parseInt(c[4]) || 0,
+        sfVal:    parseInt(c[5]) || 0,
+        tep1Val:  parseInt(c[6]) || 0,
+        tep2Val:  parseInt(c[7]) || 0,
+        tep3Val:  parseInt(c[8]) || 0,
+        pprTier:  parseInt(c[9]) || 16,
+        halfTier: parseInt(c[10]) || 16,
+        sfTier:   parseInt(c[11]) || 16,
+        tep1Tier: parseInt(c[12]) || 16,
+        tep2Tier: parseInt(c[13]) || 16,
+        tep3Tier: parseInt(c[14]) || 16,
+        rookie:   (c[15] || '').toUpperCase().trim() === 'YES',
+      };
+    }).filter(p => p.name && p.pprVal > 0);
+    renderTable();
+  } catch(e) {
+    document.getElementById('rankings-table').innerHTML = '<div class="empty-state">Could not load rankings. Please try again.</div>';
+  }
+}
+
+function getScore(p) {
+  // Each position uses the setting most relevant to them
+  const pos = p.pos;
+  
+  // TEP affects TEs most
+  if (cfg.tep !== 'off' && pos === 'TE') {
+    const tepVal = cfg.tep === 'tep1' ? p.tep1Val : cfg.tep === 'tep2' ? p.tep2Val : p.tep3Val;
+    return tepVal;
+  }
+  
+  // SF affects QBs most
+  if (cfg.qb === 'sf' && pos === 'QB') {
+    return p.sfVal;
+  }
+  
+  // Scoring format affects RBs and WRs
+  if (cfg.sc === 'half') {
+    return p.halfVal;
+  }
+  
+  return p.pprVal;
+}
+
+function getTier(p) {
+  const pos = p.pos;
+  if (cfg.tep !== 'off' && pos === 'TE') {
+    return cfg.tep === 'tep1' ? p.tep1Tier : cfg.tep === 'tep2' ? p.tep2Tier : p.tep3Tier;
+  }
+  if (cfg.qb === 'sf' && pos === 'QB') return p.sfTier;
+  if (cfg.sc === 'half') return p.halfTier;
+  return p.pprTier;
+}
+
+function setSetting(k, v) {
+  cfg[k] = v;
+  document.querySelectorAll(`[id^="${k}-"]`).forEach(e => e.classList.remove('on'));
+  document.getElementById(`${k}-${v}`).classList.add('on');
+  renderTable();
+}
+
+function setTab(t) {
+  currentTab = t;
+  document.querySelectorAll('.pos-tab').forEach(e => e.classList.remove('active'));
+  document.getElementById(`tab-${t}`).classList.add('active');
+  renderTable();
+}
+
+function renderTable() {
+  const q = document.getElementById('search-input').value.toLowerCase();
+  let list = [...players];
+  if (currentTab !== 'all') list = list.filter(p => p.pos === currentTab);
+  if (q) list = list.filter(p => p.name.toLowerCase().includes(q) || p.team.toLowerCase().includes(q));
+  list.sort((a, b) => getScore(b) - getScore(a));
+  list.forEach((p, i) => p._r = i + 1);
+
+  document.getElementById('results-count').textContent = `${list.length} player${list.length !== 1 ? 's' : ''}`;
+
+  if (!list.length) {
+    document.getElementById('rankings-table').innerHTML = '<div class="empty-state">No players found</div>';
+    return;
+  }
+
+  const tierCounts = {};
+  list.forEach(p => { const t = getTier(p); tierCounts[t] = (tierCounts[t] || 0) + 1; });
+
+  const rc = ['gold', 'silver', 'bronze'];
+  let html = `<div class="rt-head"><span>Rank</span><span>Player</span><span>Pos</span><span>Team</span><span>Rookie</span><span>Tier</span></div>`;
+  let lastTier = null;
+
+  list.forEach((p, i) => {
+    const tier = getTier(p);
+    if (tier !== lastTier) {
+      html += `<div class="tier-header"><span class="tier-name">Tier ${tier}</span><div class="tier-line"></div><span class="tier-count">${tierCounts[tier]} players</span></div>`;
+      lastTier = tier;
+    }
+    const rb = p.rookie ? `<span class="tag-badge tag-R">R</span>` : '';
+    html += `<div class="rt-row">
+      <div class="rt-rank ${rc[i] || ''}">${p._r}</div>
+      <div class="rt-player"><span class="rt-name">${p.name}</span><span class="rt-team">${p.team}</span></div>
+      <div style="text-align:center"><span class="pos-badge pos-${p.pos}">${p.pos}</span></div>
+      <div style="text-align:center;font-size:13px;color:#555">${p.team}</div>
+      <div style="text-align:center">${rb}</div>
+      <div style="text-align:center;font-size:13px;color:#444">T${tier}</div>
+    </div>`;
+  });
+
+  document.getElementById('rankings-table').innerHTML = html;
+}
+
+loadSheet();
+</script>
+</body>
+</html>

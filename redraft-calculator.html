@@ -1,0 +1,790 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Redraft Trade Calculator | Dynasty Football Hub</title>
+<meta name="description" content="Victory Formation Redraft Trade Calculator — evaluate redraft trades using your exact league scoring settings." />
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#0a0a0a;color:#f0f0f0;min-height:100vh}
+a{text-decoration:none;color:inherit}
+
+/* NAV */
+.nav{position:sticky;top:0;z-index:100;height:64px;background:rgba(10,10,10,0.97);border-bottom:1px solid #1e1e1e;display:flex;align-items:center;justify-content:space-between;padding:0 2rem}
+.nav-logo{display:flex;align-items:center;gap:12px;cursor:pointer}
+.nav-logo span{font-size:17px;font-weight:700;letter-spacing:1px;color:#f0f0f0;text-transform:uppercase}
+.nav-links{display:flex;gap:2rem}
+.nav-links a{font-size:14px;font-weight:500;color:#666;cursor:pointer;transition:color 0.2s;text-decoration:none}
+.nav-links a:hover,.nav-links a.active{color:#c0392b}
+.nav-yt{display:flex;align-items:center;gap:8px;background:#c0392b;color:#fff;font-size:13px;font-weight:600;padding:9px 16px;border-radius:6px;border:none;cursor:pointer}
+
+/* PAGE HEADER */
+.page-header{background:linear-gradient(180deg,#140303 0%,#0a0a0a 100%);border-bottom:1px solid #1e1e1e;padding:3rem 2rem 2.5rem;text-align:center}
+.page-header .tag{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:#c0392b;margin-bottom:0.8rem}
+.page-header h1{font-size:38px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:#fff;margin-bottom:0.5rem}
+.page-header h1 span{color:#c0392b}
+.page-header p{font-size:15px;color:#777;max-width:520px;margin:0 auto}
+
+/* MAIN */
+.main{max-width:1100px;margin:0 auto;padding:2rem}
+
+/* VALUE MODE TOGGLE */
+.mode-bar{background:#161616;border:1px solid #1e1e1e;border-radius:10px;padding:1.2rem 1.5rem;margin-bottom:1.5rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem}
+.mode-label{font-size:13px;color:#888;font-weight:500}
+.mode-tabs{display:flex;gap:0;border:1px solid #2a2a2a;border-radius:7px;overflow:hidden}
+.mode-tab{padding:8px 18px;font-size:13px;font-weight:600;color:#666;cursor:pointer;background:#0d0d0d;border:none;transition:all 0.15s}
+.mode-tab.active{background:#c0392b;color:#fff}
+.league-connect{display:flex;align-items:center;gap:10px}
+.input-sm{background:#0d0d0d;border:1px solid #2a2a2a;border-radius:6px;padding:8px 12px;font-size:13px;color:#f0f0f0;outline:none;font-family:inherit;width:160px}
+.input-sm::placeholder{color:#444}
+.btn-sm{background:#c0392b;color:#fff;padding:8px 14px;border-radius:6px;font-size:13px;font-weight:600;border:none;cursor:pointer;white-space:nowrap}
+.btn-sm:disabled{opacity:0.4;cursor:not-allowed}
+.btn-sm-outline{background:transparent;color:#888;border:1px solid #2a2a2a;padding:8px 14px;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer}
+.league-status{font-size:12px;display:flex;align-items:center;gap:6px}
+.status-dot{width:7px;height:7px;border-radius:50%;background:#555}
+.status-dot.green{background:#68d391}
+.status-dot.loading{background:#f6ad55;animation:pulse 1s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+
+/* TRADE AREA */
+.trade-area{display:grid;grid-template-columns:1fr auto 1fr;gap:1rem;align-items:start;margin-bottom:1.5rem}
+.trade-side{background:#161616;border:1px solid #1e1e1e;border-radius:12px;padding:1.5rem}
+.trade-side-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.2rem}
+.trade-side-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#555}
+.trade-side-value{font-family:monospace;font-size:22px;font-weight:800;color:#f0f0f0}
+.trade-side-value.winning{color:#68d391}
+.trade-side-value.losing{color:#e24b4a}
+
+/* SEARCH */
+.search-wrap{position:relative;margin-bottom:1rem}
+.trade-search{width:100%;background:#0d0d0d;border:1px solid #2a2a2a;border-radius:7px;padding:10px 14px 10px 36px;font-size:14px;color:#f0f0f0;outline:none;font-family:inherit}
+.trade-search::placeholder{color:#444}
+.trade-search:focus{border-color:#c0392b}
+.search-icon-abs{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:#444;font-size:15px;pointer-events:none}
+
+/* SEARCH DROPDOWN */
+.search-dropdown{position:absolute;top:100%;left:0;right:0;background:#1a1a1a;border:1px solid #2a2a2a;border-radius:7px;margin-top:4px;max-height:280px;overflow-y:auto;z-index:50;box-shadow:0 8px 24px rgba(0,0,0,0.5)}
+.search-result{padding:10px 14px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #111;transition:background 0.1s}
+.search-result:last-child{border-bottom:none}
+.search-result:hover{background:#222}
+.sr-left{display:flex;align-items:center;gap:10px}
+.sr-name{font-size:14px;font-weight:500;color:#f0f0f0}
+.sr-team{font-size:12px;color:#555}
+.sr-value{font-size:13px;font-weight:700;color:#aaa}
+
+/* PLAYER CARDS */
+.trade-players{display:flex;flex-direction:column;gap:8px;min-height:100px}
+.trade-player{background:#0d0d0d;border:1px solid #1e1e1e;border-radius:8px;padding:11px 14px;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.tp-left{display:flex;align-items:center;gap:10px}
+.tp-info{display:flex;flex-direction:column;gap:2px}
+.tp-name{font-size:14px;font-weight:600;color:#f0f0f0}
+.tp-meta{font-size:12px;color:#555}
+.tp-value{font-size:15px;font-weight:700;color:#aaa;white-space:nowrap}
+.tp-remove{background:none;border:none;color:#444;cursor:pointer;font-size:18px;line-height:1;padding:2px 6px;border-radius:4px;transition:color 0.15s}
+.tp-remove:hover{color:#e24b4a}
+.empty-side{text-align:center;color:#333;font-size:13px;padding:2rem 0}
+
+/* POSITION BADGES */
+.pos-badge{font-size:10px;font-weight:700;padding:2px 6px;border-radius:3px}
+.pos-QB{background:rgba(99,179,237,0.12);color:#63b3ed}
+.pos-RB{background:rgba(104,211,145,0.12);color:#68d391}
+.pos-WR{background:rgba(246,173,85,0.12);color:#f6ad55}
+.pos-TE{background:rgba(192,57,43,0.18);color:#e87c73}
+.pos-PK{background:rgba(160,100,220,0.15);color:#c084fc}
+
+/* MIDDLE DIVIDER */
+.trade-middle{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1rem;padding-top:3rem}
+.vs-badge{width:44px;height:44px;border-radius:50%;background:#1a1a1a;border:2px solid #2a2a2a;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#555}
+
+/* VERDICT */
+.verdict{background:#161616;border:1px solid #1e1e1e;border-radius:12px;padding:1.5rem;text-align:center}
+.verdict-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#555;margin-bottom:0.8rem}
+.verdict-main{font-size:22px;font-weight:800;color:#fff;margin-bottom:0.5rem}
+.verdict-sub{font-size:13px;color:#666}
+.verdict-bar-wrap{margin:1rem 0;background:#111;border-radius:20px;height:12px;overflow:hidden;position:relative}
+.verdict-bar-a{position:absolute;left:0;top:0;height:100%;background:#63b3ed;transition:width 0.5s}
+.verdict-bar-b{position:absolute;right:0;top:0;height:100%;background:#c0392b;transition:width 0.5s}
+.verdict-labels{display:flex;justify-content:space-between;font-size:11px;color:#555}
+.verdict-fair{color:#68d391;font-size:18px;font-weight:800}
+.verdict-slight{color:#f6ad55;font-size:18px;font-weight:800}
+.verdict-lopsided{color:#e24b4a;font-size:18px;font-weight:800}
+
+/* RESET */
+.reset-row{display:flex;justify-content:center;margin-top:1rem}
+
+/* LEAGUE SELECT */
+.league-select-wrap{background:#111;border:1px solid #1e1e1e;border-radius:8px;padding:1rem;margin-top:0.8rem;max-height:220px;overflow-y:auto}
+.league-opt{padding:10px 12px;cursor:pointer;border-radius:6px;display:flex;align-items:center;justify-content:space-between;transition:background 0.1s}
+.league-opt:hover{background:#1a1a1a}
+.league-opt.selected{background:rgba(192,57,43,0.1);border:1px solid rgba(192,57,43,0.3)}
+.league-opt-name{font-size:13px;font-weight:600;color:#f0f0f0}
+.league-opt-meta{font-size:11px;color:#555;margin-top:2px}
+.league-opt-badge{font-size:10px;padding:2px 7px;border-radius:4px;background:rgba(192,57,43,0.15);color:#e87c73;font-weight:600}
+
+/* FOOTER */
+.footer{background:#080808;border-top:1px solid #1e1e1e;padding:1.5rem 2rem;text-align:center;margin-top:3rem}
+.footer p{font-size:12px;color:#333}
+.footer span{color:#c0392b}
+
+@media(max-width:700px){
+  .trade-area{grid-template-columns:1fr;gap:0.8rem}
+  .trade-middle{flex-direction:row;padding-top:0}
+}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <a class="nav-logo" href="/">
+    <span>Victory Formation</span>
+  </a>
+  <div class="nav-links">
+    <a href="/">Home</a>
+    <a href="/#rankings" onclick="window.location='/'">Rankings</a>
+    <a href="/war-tool.html">VF WAR Tool</a>
+    <a href="/redraft-calculator.html" class="active">Redraft Calculator</a>
+  </div>
+  <a href="https://www.youtube.com/@victoryformation8924" target="_blank" class="nav-yt">&#9654; YouTube</a>
+</nav>
+
+<div class="page-header">
+  <div class="tag">Victory Formation</div>
+  <h1>Redraft <span>Calculator</span></h1>
+  <p>Evaluate redraft trades with values tuned to your exact scoring settings — PPR, Half PPR, Superflex, and TE Premium.</p>
+</div>
+
+<div class="main">
+
+  <!-- MODE BAR -->
+  <div class="mode-bar">
+    <div>
+      <div class="mode-label" style="margin-bottom:6px">Scoring</div>
+      <div class="mode-tabs">
+        <div class="mode-tab active" id="sc-ppr" onclick="setRedraftSetting('sc','ppr')">PPR</div>
+        <div class="mode-tab" id="sc-half" onclick="setRedraftSetting('sc','half')">Half PPR</div>
+      </div>
+    </div>
+    <div style="width:1px;height:40px;background:#1e1e1e;align-self:center"></div>
+    <div>
+      <div class="mode-label" style="margin-bottom:6px">QB Format</div>
+      <div class="mode-tabs">
+        <div class="mode-tab active" id="qb-1qb" onclick="setRedraftSetting('qb','1qb')">1QB</div>
+        <div class="mode-tab" id="qb-sf" onclick="setRedraftSetting('qb','sf')">Superflex</div>
+      </div>
+    </div>
+    <div style="width:1px;height:40px;background:#1e1e1e;align-self:center"></div>
+    <div>
+      <div class="mode-label" style="margin-bottom:6px">TE Premium</div>
+      <div class="mode-tabs">
+        <div class="mode-tab active" id="tep-off" onclick="setRedraftSetting('tep','off')">Off</div>
+        <div class="mode-tab" id="tep-tep1" onclick="setRedraftSetting('tep','tep1')">+</div>
+        <div class="mode-tab" id="tep-tep2" onclick="setRedraftSetting('tep','tep2')">++</div>
+        <div class="mode-tab" id="tep-tep3" onclick="setRedraftSetting('tep','tep3')">+++</div>
+      </div>
+    </div>
+    <div style="width:1px;height:40px;background:#1e1e1e;align-self:center"></div>
+
+    <div id="league-connect-section">
+      <div class="mode-label" style="margin-bottom:6px">Connect Sleeper League</div>
+      <div class="league-connect">
+        <input class="input-sm" type="text" id="calc-username" placeholder="Sleeper username" />
+        <button class="btn-sm" id="calc-fetch-btn" onclick="fetchCalcLeagues()">Find Leagues</button>
+        <button class="btn-sm-outline" id="calc-disconnect-btn" onclick="disconnectLeague()" style="display:none">Disconnect</button>
+      </div>
+      <div id="calc-league-status" style="margin-top:6px"></div>
+      <div id="calc-league-list" style="display:none"></div>
+    </div>
+  </div>
+
+  <!-- TRADE AREA -->
+  <div class="trade-area">
+
+    <!-- TEAM A -->
+    <div class="trade-side" id="side-a">
+      <div class="trade-side-header">
+        <div>
+          <div class="trade-side-label">Team A Receives</div>
+          <div class="trade-side-value" id="value-a">0</div>
+        </div>
+        <div style="font-size:11px;color:#444;text-align:right" id="count-a">0 players</div>
+      </div>
+      <div class="search-wrap" style="position:relative">
+        <span class="search-icon-abs">&#128269;</span>
+        <input class="trade-search" type="text" placeholder="Search players & picks..." id="search-a" oninput="searchPlayers('a')" onblur="hideDropdown('a')" autocomplete="off" />
+        <div class="search-dropdown" id="dropdown-a" style="display:none"></div>
+      </div>
+      <div class="trade-players" id="players-a">
+        <div class="empty-side">Add players to Team A</div>
+      </div>
+    </div>
+
+    <!-- MIDDLE -->
+    <div class="trade-middle">
+      <div class="vs-badge">VS</div>
+    </div>
+
+    <!-- TEAM B -->
+    <div class="trade-side" id="side-b">
+      <div class="trade-side-header">
+        <div>
+          <div class="trade-side-label">Team B Receives</div>
+          <div class="trade-side-value" id="value-b">0</div>
+        </div>
+        <div style="font-size:11px;color:#444;text-align:right" id="count-b">0 players</div>
+      </div>
+      <div class="search-wrap" style="position:relative">
+        <span class="search-icon-abs">&#128269;</span>
+        <input class="trade-search" type="text" placeholder="Search players & picks..." id="search-b" oninput="searchPlayers('b')" onblur="hideDropdown('b')" autocomplete="off" />
+        <div class="search-dropdown" id="dropdown-b" style="display:none"></div>
+      </div>
+      <div class="trade-players" id="players-b">
+        <div class="empty-side">Add players to Team B</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- VERDICT -->
+  <div class="verdict" id="verdict" style="display:none">
+    <div class="verdict-label">Trade Verdict</div>
+    <div class="verdict-main" id="verdict-main"></div>
+    <div class="verdict-bar-wrap">
+      <div class="verdict-bar-a" id="bar-a"></div>
+      <div class="verdict-bar-b" id="bar-b"></div>
+    </div>
+    <div class="verdict-labels">
+      <span id="verdict-label-a">Team A</span>
+      <span id="verdict-label-b">Team B</span>
+    </div>
+    <div style="margin-top:0.8rem;font-size:12px;color:#555" id="verdict-sub"></div>
+
+    <!-- VALUE ADJUSTMENT -->
+    <div id="adjustment-section" style="display:none;margin-top:1.2rem;padding-top:1.2rem;border-top:1px solid #1e1e1e">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:#555;margin-bottom:0.8rem">Value Adjustment</div>
+      <div id="adjustment-box" style="background:#0d0d0d;border:1px solid #2a2a2a;border-radius:8px;padding:12px 16px;display:flex;align-items:center;justify-content:space-between">
+        <div id="adjustment-text" style="font-size:13px;color:#888"></div>
+        <div id="adjustment-amount" style="font-size:18px;font-weight:800;color:#f6ad55"></div>
+      </div>
+      <div style="font-size:11px;color:#444;margin-top:6px">The side giving up the best player in the trade receives this premium — elite players are worth more than raw numbers suggest.</div>
+    </div>
+
+    <!-- ASSETS TO EVEN -->
+    <div id="even-section" style="display:none;margin-top:1.2rem;padding-top:1.2rem;border-top:1px solid #1e1e1e">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:#555;margin-bottom:0.8rem">Assets to Even the Trade</div>
+      <div style="font-size:13px;color:#666;margin-bottom:0.8rem" id="even-label"></div>
+      <div id="even-players" style="display:flex;flex-direction:column;gap:6px"></div>
+    </div>
+  </div>
+
+  <div class="reset-row">
+    <button class="btn-sm-outline" onclick="resetTrade()">&#8592; Reset Trade</button>
+  </div>
+
+</div>
+
+<footer class="footer">
+  <p><span>Dynasty Football Hub</span> &middot; Redraft Calculator &middot; Powered by Victory Formation &middot; &copy; 2025</p>
+</footer>
+
+<script>
+const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTDcNHsV873O9Hemm3exidJoc1GwwBQM286lZ3V1EY02SrdcdG5ke9g8WFJ_9VBthuOEpAVxgoWZn5H/pub?gid=0&single=true&output=csv';
+
+let mode = 'vf';
+let allPlayers = [];
+let leaguePlayers = [];
+let tradeA = [];
+let tradeB = [];
+let leagueSettings = null;
+let sleeperPlayers = {};
+let selectedLeague = null;
+
+// ── REDRAFT SETTINGS ──
+const rdCfg = { sc: 'ppr', qb: '1qb', tep: 'off' };
+
+function setRedraftSetting(k, v) {
+  rdCfg[k] = v;
+  document.querySelectorAll(`[id^="${k}-"]`).forEach(e => e.classList.remove('active'));
+  document.getElementById(`${k}-${v}`).classList.add('active');
+  renderTrade();
+}
+
+function getRedraftValue(p) {
+  const pos = p.pos;
+  if (rdCfg.tep !== 'off' && pos === 'TE') {
+    return rdCfg.tep === 'tep1' ? p.tep1Val : rdCfg.tep === 'tep2' ? p.tep2Val : p.tep3Val;
+  }
+  if (rdCfg.qb === 'sf' && pos === 'QB') return p.sfVal;
+  if (rdCfg.sc === 'half') return p.halfVal;
+  return p.pprVal;
+}
+
+// ── LOAD VF RANKINGS ──
+async function loadVFRankings() {
+  try {
+    const res = await fetch(SHEET_URL);
+    const text = await res.text();
+    const rows = text.trim().split('\n').slice(1);
+    allPlayers = rows.map(row => {
+      const cols = parseCSV(row);
+      return {
+        name:    cols[0] || '',
+        team:    cols[1] || '',
+        pos:     cols[2] || '',
+        age:     '',
+        pprVal:  parseInt(cols[3]) || 0,
+        halfVal: parseInt(cols[4]) || 0,
+        sfVal:   parseInt(cols[5]) || 0,
+        tep1Val: parseInt(cols[6]) || 0,
+        tep2Val: parseInt(cols[7]) || 0,
+        tep3Val: parseInt(cols[8]) || 0,
+        rookie:  (cols[15] || '').toUpperCase().trim() === 'YES',
+        get sfValue() { return getRedraftValue(this); },
+      };
+    }).filter(p => p.name && p.pprVal > 0);
+  } catch(e) {
+    console.error('Failed to load redraft rankings', e);
+  }
+}
+
+function parseCSV(row) {
+  const cols = [];
+  let cur = '', inQ = false;
+  for (let i = 0; i < row.length; i++) {
+    const c = row[i];
+    if (c === '"') { inQ = !inQ; }
+    else if (c === ',' && !inQ) { cols.push(cur.trim()); cur = ''; }
+    else { cur += c; }
+  }
+  cols.push(cur.trim());
+  return cols;
+}
+
+function getPlayerValue(p) {
+  return getRedraftValue(p) || 0;
+}
+
+function getValueLabel() {
+  return mode === 'league' && leaguePlayers.length > 0 ? 'League VF Score' : 'VF Value';
+}
+
+// ── MODE ──
+function setMode(m) {
+  mode = m;
+  document.getElementById('mode-vf').classList.toggle('active', m === 'vf');
+  document.getElementById('mode-league').classList.toggle('active', m === 'league');
+  updateTrade();
+}
+
+// ── SLEEPER LEAGUE CONNECTION ──
+async function fetchCalcLeagues() {
+  const username = document.getElementById('calc-username').value.trim();
+  if (!username) return;
+  const btn = document.getElementById('calc-fetch-btn');
+  btn.disabled = true; btn.textContent = 'Loading...';
+  setCalcStatus('loading', 'Finding your leagues...');
+  try {
+    const userRes = await fetch(`https://api.sleeper.app/v1/user/${username}`);
+    if (!userRes.ok) throw new Error('User not found');
+    const user = await userRes.json();
+    const leaguesRes = await fetch(`https://api.sleeper.app/v1/user/${user.user_id}/leagues/nfl/2026`);
+    const leagues = await leaguesRes.json();
+    if (!leagues || leagues.length === 0) throw new Error('No leagues found');
+    setCalcStatus('green', `Found ${leagues.length} league${leagues.length !== 1 ? 's' : ''}`);
+    renderCalcLeagues(leagues);
+  } catch(e) {
+    setCalcStatus('red', e.message || 'Something went wrong');
+  }
+  btn.disabled = false; btn.textContent = 'Find Leagues';
+}
+
+function renderCalcLeagues(leagues) {
+  const wrap = document.getElementById('calc-league-list');
+  wrap.style.display = 'block';
+  wrap.innerHTML = `<div class="league-select-wrap">${leagues.map(l => {
+    const teams = l.total_rosters || '?';
+    const scoring = l.scoring_settings?.rec === 1 ? 'PPR' : l.scoring_settings?.rec === 0.5 ? 'Half PPR' : 'Std';
+    const sf = l.roster_positions?.includes('SUPER_FLEX') ? 'SF' : '1QB';
+    return `<div class="league-opt" onclick="selectCalcLeague('${l.league_id}', this)">
+      <div>
+        <div class="league-opt-name">${l.name || 'Unnamed'}</div>
+        <div class="league-opt-meta">${teams} teams · ${scoring} · ${sf}</div>
+      </div>
+      <div class="league-opt-badge">${l.season}</div>
+    </div>`;
+  }).join('')}</div>`;
+}
+
+async function selectCalcLeague(leagueId, el) {
+  document.querySelectorAll('.league-opt').forEach(e => e.classList.remove('selected'));
+  el.classList.add('selected');
+  setCalcStatus('loading', 'Loading league settings & calculating values...');
+  try {
+    const res = await fetch(`https://api.sleeper.app/v1/league/${leagueId}`);
+    selectedLeague = await res.json();
+    leagueSettings = extractSettings(selectedLeague);
+    await calculateLeagueValues();
+    setCalcStatus('green', `Connected: ${selectedLeague.name}`);
+    document.getElementById('calc-league-list').style.display = 'none';
+    document.getElementById('calc-disconnect-btn').style.display = 'inline-flex';
+    setMode('league');
+  } catch(e) {
+    setCalcStatus('red', 'Could not load league. Try again.');
+  }
+}
+
+function extractSettings(l) {
+  const sc = l.scoring_settings || {};
+  const pos = l.roster_positions || [];
+  return {
+    rec: sc.rec || 0, bonus_rec_wr: sc.bonus_rec_wr || 0,
+    bonus_rec_te: sc.bonus_rec_te || 0, rush_att: sc.rush_att || 0,
+    rec_yd: sc.rec_yd || 0.1, rush_yd: sc.rush_yd || 0.1,
+    pass_yd: sc.pass_yd || 0.04, pass_td: sc.pass_td || 4,
+    rush_td: sc.rush_td || 6, rec_td: sc.rec_td || 6,
+    numQB: pos.filter(p=>p==='QB').length,
+    numRB: pos.filter(p=>p==='RB').length,
+    numWR: pos.filter(p=>p==='WR').length,
+    numTE: pos.filter(p=>p==='TE').length,
+    numFlex: pos.filter(p=>p==='FLEX'||p==='REC_FLEX').length,
+    numSF: pos.filter(p=>p==='SUPER_FLEX').length,
+    teams: l.total_rosters || 12,
+  };
+}
+
+async function calculateLeagueValues() {
+  // Fetch players and weekly stats
+  if (Object.keys(sleeperPlayers).length === 0) {
+    const res = await fetch('https://api.sleeper.app/v1/players/nfl');
+    sleeperPlayers = await res.json();
+  }
+  const weekPromises = [];
+  for (let w = 1; w <= 17; w++) {
+    weekPromises.push(fetch(`https://api.sleeper.app/v1/stats/nfl/regular/2025/${w}`).then(r=>r.json()).catch(()=>({})));
+  }
+  const allWeekStats = await Promise.all(weekPromises);
+  const playerSeasonStats = {};
+  const playerGP = {};
+  allWeekStats.forEach(weekData => {
+    if (!weekData || typeof weekData !== 'object') return;
+    Object.entries(weekData).forEach(([id, stats]) => {
+      if (!stats || typeof stats !== 'object') return;
+      if (!playerSeasonStats[id]) { playerSeasonStats[id] = {}; playerGP[id] = 0; }
+      playerGP[id]++;
+      Object.entries(stats).forEach(([k,v]) => { if (typeof v === 'number') playerSeasonStats[id][k] = (playerSeasonStats[id][k]||0)+v; });
+    });
+  });
+
+  const sc = leagueSettings;
+  const playerWAR = [];
+  Object.entries(playerSeasonStats).forEach(([id, stats]) => {
+    const info = sleeperPlayers[id];
+    if (!info) return;
+    const pos = info.position;
+    if (!['QB','RB','WR','TE'].includes(pos)) return;
+    let pts = 0;
+    pts += (stats.pass_yd||0)*sc.pass_yd + (stats.pass_td||0)*sc.pass_td - (stats.pass_int||0)*2;
+    pts += (stats.rush_yd||0)*sc.rush_yd + (stats.rush_td||0)*sc.rush_td + (stats.rush_att||0)*sc.rush_att;
+    pts += (stats.rec||0)*sc.rec + (stats.rec_yd||0)*sc.rec_yd + (stats.rec_td||0)*sc.rec_td;
+    if (pos==='WR') pts += (stats.rec||0)*sc.bonus_rec_wr;
+    if (pos==='TE') pts += (stats.rec||0)*sc.bonus_rec_te;
+    pts -= (stats.fum_lost||0)*2;
+    if (pts < 5) return;
+    playerWAR.push({ id, name:`${info.first_name} ${info.last_name}`, team:info.team||'FA', pos, pts:parseFloat(pts.toFixed(1)) });
+  });
+
+  // Replacement level
+  const byPos = {};
+  ['QB','RB','WR','TE'].forEach(pos => { byPos[pos] = playerWAR.filter(p=>p.pos===pos).sort((a,b)=>b.pts-a.pts); });
+  const mandatory = { QB:sc.numQB*sc.teams, RB:sc.numRB*sc.teams, WR:sc.numWR*sc.teams, TE:sc.numTE*sc.teams };
+  const flexPool = [];
+  ['RB','WR','TE'].forEach(pos => byPos[pos].slice(mandatory[pos]).forEach(p=>flexPool.push(p)));
+  flexPool.sort((a,b)=>b.pts-a.pts);
+  const flexC = {QB:0,RB:0,WR:0,TE:0};
+  flexPool.slice(0,sc.numFlex*sc.teams).forEach(p=>flexC[p.pos]++);
+  const sfPool = [];
+  byPos['QB'].slice(mandatory.QB).forEach(p=>sfPool.push({...p,_sfPos:'QB'}));
+  flexPool.slice(sc.numFlex*sc.teams).forEach(p=>sfPool.push({...p,_sfPos:p.pos}));
+  sfPool.sort((a,b)=>b.pts-a.pts);
+  const sfC = {QB:0,RB:0,WR:0,TE:0};
+  sfPool.slice(0,sc.numSF*sc.teams).forEach(p=>sfC[p._sfPos]++);
+  const totalS = { QB:mandatory.QB+sfC.QB, RB:mandatory.RB+flexC.RB+sfC.RB, WR:mandatory.WR+flexC.WR+sfC.WR, TE:mandatory.TE+flexC.TE+sfC.TE };
+  const repl = {};
+  ['QB','RB','WR','TE'].forEach(pos => {
+    const cut = totalS[pos];
+    const border = byPos[pos].slice(Math.max(0,cut-1),cut+3);
+    repl[pos] = border.length>0 ? border.reduce((s,p)=>s+p.pts,0)/border.length : 0;
+  });
+
+  // WAR and VF Score
+  playerWAR.forEach(p => { p.war = parseFloat(((p.pts-repl[p.pos])/10).toFixed(2)); });
+  const posStats = {};
+  ['QB','RB','WR','TE'].forEach(pos => {
+    const top50 = playerWAR.filter(p=>p.pos===pos&&p.war>0).sort((a,b)=>b.pts-a.pts).slice(0,50);
+    if (!top50.length) return;
+    const ratio = top50.map(p=>p.pts/(repl[pos]||1));
+    const mean = ratio.reduce((s,v)=>s+v,0)/ratio.length;
+    posStats[pos] = { mean, repl: repl[pos] };
+  });
+  playerWAR.forEach(p => {
+    const r = (repl[p.pos]||1);
+    const ratio = p.pts/r;
+    const maxRatio = Math.max(...playerWAR.filter(x=>x.pos===p.pos).map(x=>x.pts/r));
+    p.vfScore = parseFloat(Math.max(0,Math.min(100,(50+((ratio-1)/(maxRatio-1))*50))).toFixed(1));
+  });
+
+  leaguePlayers = playerWAR;
+  updateTrade();
+}
+
+function disconnectLeague() {
+  selectedLeague = null; leagueSettings = null; leaguePlayers = [];
+  document.getElementById('calc-username').value = '';
+  document.getElementById('calc-league-status').innerHTML = '';
+  document.getElementById('calc-league-list').style.display = 'none';
+  document.getElementById('calc-disconnect-btn').style.display = 'none';
+  setMode('vf');
+}
+
+function setCalcStatus(type, msg) {
+  const colors = {green:'green',red:'red',loading:'loading'};
+  document.getElementById('calc-league-status').innerHTML = `<div class="league-status"><div class="status-dot ${colors[type]||''}"></div><span style="font-size:12px;color:#777">${msg}</span></div>`;
+}
+
+// ── SEARCH ──
+function searchPlayers(side) {
+  const q = document.getElementById(`search-${side}`).value.toLowerCase().trim();
+  const dropdown = document.getElementById(`dropdown-${side}`);
+  if (!q || q.length < 2) { dropdown.style.display = 'none'; return; }
+  
+  const results = allPlayers
+    .filter(p => p.name.toLowerCase().includes(q) || p.team.toLowerCase().includes(q) || p.pos.toLowerCase().includes(q))
+    .slice(0, 12);
+
+  if (!results.length) { dropdown.style.display = 'none'; return; }
+
+  const val = getValueLabel();
+  dropdown.innerHTML = results.map(p => {
+    const v = getPlayerValue(p);
+    return `<div class="search-result" onmousedown="addPlayer('${side}','${p.name.replace(/'/g,"\\'")}')">
+      <div class="sr-left">
+        <span class="pos-badge pos-${p.pos}">${p.pos}</span>
+        <div>
+          <div class="sr-name">${p.name}</div>
+          <div class="sr-team">${p.team || '—'}</div>
+        </div>
+      </div>
+      <div class="sr-value">${v.toLocaleString()}</div>
+    </div>`;
+  }).join('');
+  dropdown.style.display = 'block';
+}
+
+function hideDropdown(side) {
+  setTimeout(() => { document.getElementById(`dropdown-${side}`).style.display = 'none'; }, 150);
+}
+
+function addPlayer(side, name) {
+  const p = allPlayers.find(p => p.name === name);
+  if (!p) return;
+  const arr = side === 'a' ? tradeA : tradeB;
+  if (arr.find(x => x.name === name)) return; // no duplicates
+  arr.push(p);
+  document.getElementById(`search-${side}`).value = '';
+  document.getElementById(`dropdown-${side}`).style.display = 'none';
+  renderTrade();
+}
+
+function removePlayer(side, name) {
+  if (side === 'a') tradeA = tradeA.filter(p => p.name !== name);
+  else tradeB = tradeB.filter(p => p.name !== name);
+  renderTrade();
+}
+
+// ── RENDER ──
+function renderTrade() {
+  renderSide('a', tradeA);
+  renderSide('b', tradeB);
+  updateTrade();
+}
+
+function renderSide(side, players) {
+  const container = document.getElementById(`players-${side}`);
+  if (!players.length) {
+    container.innerHTML = `<div class="empty-side">Add players to Team ${side.toUpperCase()}</div>`;
+    return;
+  }
+  container.innerHTML = players.map(p => {
+    const v = getPlayerValue(p);
+    return `<div class="trade-player">
+      <div class="tp-left">
+        <span class="pos-badge pos-${p.pos}">${p.pos}</span>
+        <div class="tp-info">
+          <div class="tp-name">${p.name}</div>
+          <div class="tp-meta">${p.team || '—'} ${p.age ? '· Age '+p.age : ''}</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <div class="tp-value">${v.toLocaleString()}</div>
+        <button class="tp-remove" onclick="removePlayer('${side}','${p.name.replace(/'/g,"\\'")}')">&#10005;</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function getStudPremium(player, opposingPieces) {
+  if (!player || player.pos === 'PK') return 0;
+  const v = getPlayerValue(player);
+  
+  // Base rate by tier
+  let baseRate;
+  if (v >= 9000) baseRate = 0.20;       // Elite
+  else if (v >= 6000) baseRate = 0.12;  // Good starter
+  else if (v >= 3000) baseRate = 0.05;  // Depth
+  else return 0;
+
+  // Each additional piece on opposing side adds 15% (elite), 11% (good), 7% (depth)
+  const perPieceRate = v >= 9000 ? 0.15 : v >= 6000 ? 0.11 : 0.07;
+  const extraPieces = Math.max(0, opposingPieces - 1);
+  const totalRate = baseRate + (extraPieces * perPieceRate);
+
+  return Math.round(v * totalRate);
+}
+
+function updateTrade() {
+  const rawA = tradeA.reduce((s,p) => s + getPlayerValue(p), 0);
+  const rawB = tradeB.reduce((s,p) => s + getPlayerValue(p), 0);
+
+  // Find the single best player across both sides
+  const bestA = tradeA.filter(p=>p.pos!=='PK').sort((a,b)=>getPlayerValue(b)-getPlayerValue(a))[0] || null;
+  const bestB = tradeB.filter(p=>p.pos!=='PK').sort((a,b)=>getPlayerValue(b)-getPlayerValue(a))[0] || null;
+  const bestAVal = bestA ? getPlayerValue(bestA) : 0;
+  const bestBVal = bestB ? getPlayerValue(bestB) : 0;
+
+  // The side with the best player gets adjustment — premium grows with opposing pieces
+  let adjA = rawA, adjB = rawB;
+  let adjustedSide = null, adjustedPlayer = null, adjustmentAmt = 0, adjustmentRate = 0;
+
+  if (tradeA.length > 0 && tradeB.length > 0) {
+    if (bestAVal > bestBVal) {
+      adjustmentAmt = getStudPremium(bestA, tradeB.length);
+      adjA = rawA + adjustmentAmt;
+      adjustedSide = 'A'; adjustedPlayer = bestA;
+      adjustmentRate = adjustmentAmt / getPlayerValue(bestA);
+    } else if (bestBVal > bestAVal) {
+      adjustmentAmt = getStudPremium(bestB, tradeA.length);
+      adjB = rawB + adjustmentAmt;
+      adjustedSide = 'B'; adjustedPlayer = bestB;
+      adjustmentRate = adjustmentAmt / getPlayerValue(bestB);
+    }
+  }
+
+  document.getElementById('value-a').textContent = rawA.toLocaleString();
+  document.getElementById('value-b').textContent = rawB.toLocaleString();
+  document.getElementById('count-a').textContent = `${tradeA.length} player${tradeA.length !== 1 ? 's' : ''}`;
+  document.getElementById('count-b').textContent = `${tradeB.length} player${tradeB.length !== 1 ? 's' : ''}`;
+
+  const elA = document.getElementById('value-a');
+  const elB = document.getElementById('value-b');
+  elA.className = 'trade-side-value' + (adjA > adjB ? ' winning' : adjA < adjB ? ' losing' : '');
+  elB.className = 'trade-side-value' + (adjB > adjA ? ' winning' : adjB < adjA ? ' losing' : '');
+
+  if (tradeA.length === 0 && tradeB.length === 0) {
+    document.getElementById('verdict').style.display = 'none';
+    return;
+  }
+  document.getElementById('verdict').style.display = 'block';
+
+  const total = adjA + adjB || 1;
+  const pctA = Math.round((adjA / total) * 100);
+  const pctB = 100 - pctA;
+  const diff = Math.abs(adjA - adjB);
+  const diffPct = Math.round((diff / Math.max(adjA, adjB, 1)) * 100);
+
+  document.getElementById('bar-a').style.width = pctA + '%';
+  document.getElementById('bar-b').style.width = pctB + '%';
+  document.getElementById('verdict-label-a').textContent = `Team A: ${pctA}%`;
+  document.getElementById('verdict-label-b').textContent = `Team B: ${pctB}%`;
+
+  let verdictClass, verdictText;
+  if (diffPct <= 5) {
+    verdictClass = 'verdict-fair'; verdictText = '✓ Fair Trade';
+  } else if (diffPct <= 15) {
+    const winner = adjA > adjB ? 'Team A' : 'Team B';
+    verdictClass = 'verdict-slight'; verdictText = `${winner} Wins Slightly`;
+  } else {
+    const winner = adjA > adjB ? 'Team A' : 'Team B';
+    verdictClass = 'verdict-lopsided'; verdictText = `${winner} Wins This Trade`;
+  }
+
+  document.getElementById('verdict-main').innerHTML = `<span class="${verdictClass}">${verdictText}</span>`;
+  document.getElementById('verdict-sub').textContent = diffPct <= 5
+    ? 'Values are within 5% — this is a balanced trade'
+    : `${adjA > adjB ? 'Team A' : 'Team B'} is getting ${diffPct}% more value after stud adjustment`;
+
+  // Value Adjustment section
+  const adjSection = document.getElementById('adjustment-section');
+  if (adjustedSide && adjustmentAmt > 0) {
+    adjSection.style.display = 'block';
+    const opposingPieces = adjustedSide === 'A' ? tradeB.length : tradeA.length;
+    const ratePct = Math.round(adjustmentRate * 100);
+    document.getElementById('adjustment-text').innerHTML = 
+      `<strong style="color:#f0f0f0">${adjustedPlayer.name}</strong> stud premium · ${opposingPieces} piece${opposingPieces !== 1 ? 's' : ''} on opposing side · <span style="color:#f6ad55">+${ratePct}% applied</span>`;
+    document.getElementById('adjustment-amount').textContent = `+${adjustmentAmt.toLocaleString()}`;
+  } else {
+    adjSection.style.display = 'none';
+  }
+
+  // Assets to even section
+  const evenSection = document.getElementById('even-section');
+  if (diffPct > 5 && tradeA.length > 0 && tradeB.length > 0) {
+    evenSection.style.display = 'block';
+    const losingTeam = adjA < adjB ? 'A' : 'B';
+    const needAmount = diff;
+    document.getElementById('even-label').textContent = 
+      `Team ${losingTeam} needs to add ~${needAmount.toLocaleString()} in value to even the trade:`;
+    
+    // Find players close to the needed value
+    const suggestions = allPlayers
+      .filter(p => {
+        const v = getPlayerValue(p);
+        const inTrade = [...tradeA, ...tradeB].find(x => x.name === p.name);
+        return !inTrade && v > 0;
+      })
+      .map(p => ({ ...p, diff: Math.abs(getPlayerValue(p) - needAmount) }))
+      .sort((a,b) => a.diff - b.diff)
+      .slice(0, 4);
+
+    document.getElementById('even-players').innerHTML = suggestions.map(p => `
+      <div style="background:#0d0d0d;border:1px solid #222;border-radius:7px;padding:10px 14px;display:flex;align-items:center;justify-content:space-between">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span class="pos-badge pos-${p.pos}">${p.pos}</span>
+          <div>
+            <div style="font-size:13px;font-weight:600;color:#f0f0f0">${p.name}</div>
+            <div style="font-size:11px;color:#555">${p.team || '—'}</div>
+          </div>
+        </div>
+        <div style="font-size:13px;font-weight:700;color:#aaa">${getPlayerValue(p).toLocaleString()}</div>
+      </div>`).join('');
+  } else {
+    evenSection.style.display = 'none';
+  }
+
+  renderSide('a', tradeA);
+  renderSide('b', tradeB);
+}
+
+function resetTrade() {
+  tradeA = []; tradeB = [];
+  document.getElementById('search-a').value = '';
+  document.getElementById('search-b').value = '';
+  renderTrade();
+  document.getElementById('verdict').style.display = 'none';
+}
+
+// ── INIT ──
+loadVFRankings();
+</script>
+</body>
+</html>

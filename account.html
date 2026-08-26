@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>My Account | Dynasty Football Hub</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#0a0a0a;color:#f0f0f0;min-height:100vh}
+a{text-decoration:none;color:inherit}
+.nav{height:64px;background:rgba(10,10,10,0.97);border-bottom:1px solid #1e1e1e;display:flex;align-items:center;justify-content:space-between;padding:0 2rem}
+.nav-logo span{font-size:17px;font-weight:700;letter-spacing:1px;color:#f0f0f0;text-transform:uppercase}
+.main{max-width:700px;margin:3rem auto;padding:0 2rem}
+.card{background:#161616;border:1px solid #1e1e1e;border-radius:12px;padding:1.5rem;margin-bottom:1.5rem}
+.card-title{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:#555;margin-bottom:1rem}
+.info-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid #111}
+.info-row:last-child{border-bottom:none}
+.info-label{font-size:13px;color:#666}
+.info-value{font-size:14px;font-weight:600;color:#f0f0f0}
+.tier-badge{padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700}
+.tier-free{background:#1a1a1a;color:#555}
+.tier-core{background:rgba(192,57,43,0.15);color:#e87c73}
+.tier-premium{background:rgba(104,211,145,0.15);color:#68d391}
+.btn{padding:11px 20px;border-radius:8px;font-size:13px;font-weight:600;border:none;cursor:pointer;font-family:inherit;transition:all 0.2s}
+.btn-red{background:#c0392b;color:#fff}
+.btn-red:hover{opacity:0.9}
+.btn-outline{background:transparent;border:1px solid #2a2a2a;color:#888}
+.btn-outline:hover{border-color:#555;color:#f0f0f0}
+.features-list{list-style:none}
+.features-list li{font-size:13px;color:#888;padding:7px 0;border-bottom:1px solid #111;display:flex;align-items:center;gap:8px}
+.features-list li:last-child{border-bottom:none}
+.features-list li::before{content:'✓';color:#68d391;font-weight:700}
+.features-list li.locked::before{content:'🔒';font-size:11px}
+.features-list li.locked{color:#444}
+.success-banner{background:rgba(104,211,145,0.1);border:1px solid rgba(104,211,145,0.3);border-radius:10px;padding:1rem 1.5rem;margin-bottom:1.5rem;font-size:14px;color:#68d391;display:none}
+.loading{text-align:center;padding:4rem;color:#444}
+</style>
+</head>
+<body>
+<nav class="nav">
+  <a class="nav-logo" href="/"><span>Victory <span style="color:#c0392b">Formation</span></span></a>
+  <a href="/" style="font-size:14px;color:#666">← Back to Site</a>
+</nav>
+
+<div class="main" id="main" style="display:none">
+
+  <div class="success-banner" id="success-banner">
+    🎉 Subscription activated! Welcome to Victory Formation premium.
+  </div>
+
+  <div class="card">
+    <div class="card-title">Account</div>
+    <div class="info-row">
+      <div class="info-label">Email</div>
+      <div class="info-value" id="acct-email">—</div>
+    </div>
+    <div class="info-row">
+      <div class="info-label">Plan</div>
+      <div class="info-value"><span class="tier-badge" id="acct-tier">Free</span></div>
+    </div>
+    <div class="info-row">
+      <div class="info-label">Member since</div>
+      <div class="info-value" id="acct-since">—</div>
+    </div>
+    <div style="margin-top:1rem;display:flex;gap:10px;flex-wrap:wrap">
+      <button class="btn btn-red" onclick="window.location.href='/pricing.html'">Manage Subscription</button>
+      <button class="btn btn-outline" onclick="doSignOut()">Sign Out</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Your Access</div>
+    <ul class="features-list" id="features-list"></ul>
+  </div>
+
+</div>
+
+<div class="loading" id="loading">Loading your account...</div>
+
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { getAuth, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+import { getFirestore, doc, getDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+
+const firebaseConfig = {
+  apiKey: "AIzaSyA6wnyeb65VHsqNMu9Odxw4H_vzeF1mzYM",
+  authDomain: "dynasty-football-hub-d76b0.firebaseapp.com",
+  projectId: "dynasty-football-hub-d76b0",
+  storageBucket: "dynasty-football-hub-d76b0.firebasestorage.app",
+  messagingSenderId: "450779535418",
+  appId: "1:450779535418:web:fe5eee57b771e0fbfefd03"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+const allFeatures = {
+  free: ['Dynasty Rankings','Dynasty Trade Calculator','VF WAR Tool','Dynasty Duel','All Episodes'],
+  core: ['2026 Redraft Rankings','PPR / Half PPR / SF / TEP toggles','Weekly ranking updates'],
+  premium: ['Redraft Trade Calculator','League-specific values','Stud premium logic','Assets to even trades','Discord Access'],
+};
+
+onAuthStateChanged(auth, async (user) => {
+  if (!user) {
+    window.location.href = '/auth.html?return=/account.html';
+    return;
+  }
+
+  // Check success param
+  if (new URLSearchParams(window.location.search).get('success')) {
+    document.getElementById('success-banner').style.display = 'block';
+  }
+
+  const ref = doc(db, 'users', user.uid);
+  const snap = await getDoc(ref);
+  const data = snap.data() || {};
+  const tier = data.tier || 'free';
+
+  document.getElementById('acct-email').textContent = user.email;
+  document.getElementById('acct-since').textContent = new Date(user.metadata.creationTime).toLocaleDateString('en-US', {month:'long',year:'numeric'});
+
+  const tierEl = document.getElementById('acct-tier');
+  if (tier === 'premium') { tierEl.textContent = 'Redraft Premium'; tierEl.className = 'tier-badge tier-premium'; }
+  else if (tier === 'core') { tierEl.textContent = 'Redraft Core'; tierEl.className = 'tier-badge tier-core'; }
+  else { tierEl.textContent = 'Free'; tierEl.className = 'tier-badge tier-free'; }
+
+  // Build features list
+  const list = document.getElementById('features-list');
+  const unlocked = [...allFeatures.free, ...(tier === 'core' || tier === 'premium' ? allFeatures.core : []), ...(tier === 'premium' ? allFeatures.premium : [])];
+  const locked = [...(tier === 'free' ? allFeatures.core : []), ...(tier !== 'premium' ? allFeatures.premium : [])];
+
+  unlocked.forEach(f => { const li = document.createElement('li'); li.textContent = f; list.appendChild(li); });
+  locked.forEach(f => { const li = document.createElement('li'); li.className = 'locked'; li.textContent = f; list.appendChild(li); });
+
+  document.getElementById('loading').style.display = 'none';
+  document.getElementById('main').style.display = 'block';
+});
+
+window.doSignOut = async function() {
+  await signOut(auth);
+  window.location.href = '/';
+}
+</script>
+</body>
+</html>

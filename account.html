@@ -96,9 +96,9 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 
 const allFeatures = {
-  free: ['Dynasty Rankings','Dynasty Trade Calculator','VF WAR Tool','Dynasty Duel','All Episodes'],
-  core: ['2026 Redraft Rankings','PPR / Half PPR / SF / TEP toggles','Weekly ranking updates'],
-  premium: ['Redraft Trade Calculator','League-specific values','Stud premium logic','Assets to even trades','Discord Access'],
+  free: ['Dynasty Rankings','Dynasty Trade Calculator','VF WAR Tool','Dynasty Duel'],
+  core: ['2026 Redraft Rankings','PPR / Half PPR / SF / TEP toggles','Redraft Trade Calculator','League-specific values','Updated weekly'],
+  premium: ['Start/Sit Tool','Weekly matchup rankings','Free Team Review','Discord Access','Early ranking updates','Direct access to Victory Formation'],
 };
 
 onAuthStateChanged(auth, async (user) => {

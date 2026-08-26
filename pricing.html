@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Pricing | Dynasty Football Hub</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#0a0a0a;color:#f0f0f0;min-height:100vh}
+a{text-decoration:none;color:inherit}
+
+.nav{height:64px;background:rgba(10,10,10,0.97);border-bottom:1px solid #1e1e1e;display:flex;align-items:center;justify-content:space-between;padding:0 2rem}
+.nav-logo span{font-size:17px;font-weight:700;letter-spacing:1px;color:#f0f0f0;text-transform:uppercase}
+.nav-right{display:flex;align-items:center;gap:1rem}
+.nav-link{font-size:14px;color:#666;cursor:pointer}
+.nav-link:hover{color:#c0392b}
+
+.page-header{background:linear-gradient(180deg,#140303 0%,#0a0a0a 100%);border-bottom:1px solid #1e1e1e;padding:3rem 2rem;text-align:center}
+.page-header .tag{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:#c0392b;margin-bottom:0.8rem}
+.page-header h1{font-size:38px;font-weight:800;color:#fff;margin-bottom:0.5rem}
+.page-header h1 span{color:#c0392b}
+.page-header p{font-size:15px;color:#777;max-width:500px;margin:0 auto}
+
+.main{max-width:900px;margin:0 auto;padding:3rem 2rem}
+
+/* USER STATUS */
+.user-bar{background:#161616;border:1px solid #1e1e1e;border-radius:10px;padding:1rem 1.5rem;margin-bottom:2rem;display:flex;align-items:center;justify-content:space-between;display:none}
+.user-email{font-size:14px;color:#888}
+.user-tier{font-size:12px;font-weight:700;padding:3px 10px;border-radius:20px;background:rgba(192,57,43,0.15);color:#e87c73}
+.btn-signout{font-size:13px;color:#555;cursor:pointer;background:none;border:none;font-family:inherit}
+.btn-signout:hover{color:#c0392b}
+
+/* PRICING CARDS */
+.pricing-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1.5rem;margin-bottom:3rem}
+.pricing-card{background:#161616;border:1px solid #1e1e1e;border-radius:16px;padding:2rem;position:relative;transition:border-color 0.2s}
+.pricing-card.featured{border-color:#c0392b}
+.pricing-badge{position:absolute;top:-12px;left:50%;transform:translateX(-50%);background:#c0392b;color:#fff;font-size:11px;font-weight:700;padding:4px 14px;border-radius:20px;text-transform:uppercase;letter-spacing:0.5px;white-space:nowrap}
+.pricing-name{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#888;margin-bottom:0.5rem}
+.pricing-price{font-size:38px;font-weight:800;color:#fff;margin-bottom:0.3rem}
+.pricing-price span{font-size:16px;font-weight:400;color:#555}
+.pricing-desc{font-size:13px;color:#555;margin-bottom:1.5rem;min-height:36px}
+.pricing-features{list-style:none;margin-bottom:2rem}
+.pricing-features li{font-size:13px;color:#888;padding:7px 0;border-bottom:1px solid #111;display:flex;align-items:center;gap:8px}
+.pricing-features li:last-child{border-bottom:none}
+.pricing-features li::before{content:'✓';color:#68d391;font-weight:700;flex-shrink:0}
+.pricing-features li.no::before{content:'✗';color:#444}
+.pricing-features li.no{color:#444}
+.btn-pricing{width:100%;padding:12px;border-radius:8px;font-size:14px;font-weight:600;border:none;cursor:pointer;transition:all 0.2s;font-family:inherit}
+.btn-pricing-free{background:#1a1a1a;color:#888;border:1px solid #2a2a2a}
+.btn-pricing-free:hover{border-color:#555;color:#f0f0f0}
+.btn-pricing-paid{background:#c0392b;color:#fff}
+.btn-pricing-paid:hover{opacity:0.9}
+.btn-pricing:disabled{opacity:0.5;cursor:not-allowed}
+
+.spinner{display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,0.3);border-top-color:#fff;border-radius:50%;animation:spin 0.8s linear infinite;margin-right:6px;vertical-align:middle}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* FAQ */
+.faq{margin-top:3rem}
+.faq h2{font-size:20px;font-weight:700;color:#fff;margin-bottom:1.5rem;text-align:center}
+.faq-item{background:#161616;border:1px solid #1e1e1e;border-radius:10px;padding:1.2rem 1.5rem;margin-bottom:0.8rem}
+.faq-q{font-size:14px;font-weight:600;color:#f0f0f0;margin-bottom:0.5rem}
+.faq-a{font-size:13px;color:#666;line-height:1.6}
+
+.footer{background:#080808;border-top:1px solid #1e1e1e;padding:1.5rem 2rem;text-align:center;margin-top:3rem}
+.footer p{font-size:12px;color:#333}
+.footer span{color:#c0392b}
+
+@media(max-width:700px){.pricing-grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <a class="nav-logo" href="/"><span>Victory <span style="color:#c0392b">Formation</span></span></a>
+  <div class="nav-right">
+    <a class="nav-link" href="/">Home</a>
+    <span class="nav-link" id="auth-nav-link" onclick="handleAuthNav()">Sign In</span>
+  </div>
+</nav>
+
+<div class="page-header">
+  <div class="tag">Victory Formation</div>
+  <h1>Level Up Your <span>Redraft</span> Game</h1>
+  <p>Dynasty tools are always free. Go premium for redraft season — rankings, calculators, and more.</p>
+</div>
+
+<div class="main">
+
+  <div class="user-bar" id="user-bar">
+    <div>
+      <div class="user-email" id="user-email"></div>
+      <div style="margin-top:4px"><span class="user-tier" id="user-tier">Free</span></div>
+    </div>
+    <button class="btn-signout" onclick="signOut()">Sign Out</button>
+  </div>
+
+  <div class="pricing-grid">
+
+    <!-- FREE -->
+    <div class="pricing-card">
+      <div class="pricing-name">Free</div>
+      <div class="pricing-price">$0<span>/mo</span></div>
+      <div class="pricing-desc">Everything dynasty, always free.</div>
+      <ul class="pricing-features">
+        <li>Dynasty Rankings</li>
+        <li>Dynasty Trade Calculator</li>
+        <li>VF WAR Tool</li>
+        <li>Dynasty Duel</li>
+        <li>All Episodes</li>
+        <li class="no">Redraft Rankings</li>
+        <li class="no">Redraft Calculator</li>
+      </ul>
+      <button class="btn-pricing btn-pricing-free" id="btn-free" onclick="window.location.href='/'">Go to Site</button>
+    </div>
+
+    <!-- CORE -->
+    <div class="pricing-card featured">
+      <div class="pricing-badge">Most Popular</div>
+      <div class="pricing-name">Redraft Core</div>
+      <div class="pricing-price">$3<span>/mo</span></div>
+      <div class="pricing-desc">Full redraft rankings for your league settings.</div>
+      <ul class="pricing-features">
+        <li>Everything in Free</li>
+        <li>2026 Redraft Rankings</li>
+        <li>PPR, Half PPR, SF, TEP toggles</li>
+        <li>Rookie tags</li>
+        <li>Updated weekly</li>
+        <li class="no">Redraft Trade Calculator</li>
+        <li class="no">Discord Access</li>
+      </ul>
+      <button class="btn-pricing btn-pricing-paid" id="btn-core" onclick="subscribe('core')">Get Redraft Core</button>
+    </div>
+
+    <!-- PREMIUM -->
+    <div class="pricing-card">
+      <div class="pricing-name">Redraft Premium</div>
+      <div class="pricing-price">$7<span>/mo</span></div>
+      <div class="pricing-desc">The full redraft toolkit for serious managers.</div>
+      <ul class="pricing-features">
+        <li>Everything in Core</li>
+        <li>Redraft Trade Calculator</li>
+        <li>League-specific values</li>
+        <li>Stud premium logic</li>
+        <li>Assets to even trades</li>
+        <li>Discord Access</li>
+        <li>Early ranking updates</li>
+      </ul>
+      <button class="btn-pricing btn-pricing-paid" id="btn-premium" onclick="subscribe('premium')">Get Redraft Premium</button>
+    </div>
+
+  </div>
+
+  <div class="faq">
+    <h2>Common Questions</h2>
+    <div class="faq-item">
+      <div class="faq-q">Can I cancel anytime?</div>
+      <div class="faq-a">Yes — cancel anytime from your account dashboard. No long-term commitments.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q">Will dynasty tools always be free?</div>
+      <div class="faq-a">Yes. Dynasty Rankings, Dynasty Trade Calculator, WAR Tool and Dynasty Duel are always free. We charge for redraft tools only.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q">How do I access premium features after subscribing?</div>
+      <div class="faq-a">Just sign in with your account and premium pages unlock automatically. No codes or extra steps needed.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q">Can I upgrade from Core to Premium?</div>
+      <div class="faq-a">Yes — you can upgrade anytime from your account dashboard and you'll only be charged the difference.</div>
+    </div>
+  </div>
+
+</div>
+
+<footer class="footer">
+  <p><span>Dynasty Football Hub</span> &middot; Victory Formation &middot; &copy; 2026</p>
+</footer>
+
+<script src="https://js.stripe.com/v3/"></script>
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { getAuth, onAuthStateChanged, signOut as fbSignOut } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+import { getFirestore, doc, getDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+
+const firebaseConfig = {
+  apiKey: "AIzaSyA6wnyeb65VHsqNMu9Odxw4H_vzeF1mzYM",
+  authDomain: "dynasty-football-hub-d76b0.firebaseapp.com",
+  projectId: "dynasty-football-hub-d76b0",
+  storageBucket: "dynasty-football-hub-d76b0.firebasestorage.app",
+  messagingSenderId: "450779535418",
+  appId: "1:450779535418:web:fe5eee57b771e0fbfefd03"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const stripe = Stripe('pk_live_51Tg6UvQpDsbYPrStHRRbSJmB0Fzw2MLaV3TeLmVs5GQSu0TXQ7UTk6cc3v7nSTOXac2bZfGBEYsT96iT0iuhslSk006ngO98fA');
+
+const PRICES = {
+  core: 'price_1U8T99QpDsbYPrStOh5eAnmu',
+  premium: 'price_1U8T9YQpDsbYPrStByGeOt19'
+};
+
+let currentUser = null;
+let currentTier = 'free';
+
+onAuthStateChanged(auth, async (user) => {
+  currentUser = user;
+  if (user) {
+    document.getElementById('user-bar').style.display = 'flex';
+    document.getElementById('user-email').textContent = user.email;
+    document.getElementById('auth-nav-link').textContent = 'My Account';
+
+    // Check subscription tier
+    const ref = doc(db, 'users', user.uid);
+    const snap = await getDoc(ref);
+    const data = snap.data() || {};
+    currentTier = data.tier || 'free';
+
+    const tierEl = document.getElementById('user-tier');
+    if (currentTier === 'premium') {
+      tierEl.textContent = 'Redraft Premium';
+      document.getElementById('btn-premium').textContent = '✓ Current Plan';
+      document.getElementById('btn-premium').disabled = true;
+      document.getElementById('btn-core').textContent = 'Downgrade';
+    } else if (currentTier === 'core') {
+      tierEl.textContent = 'Redraft Core';
+      document.getElementById('btn-core').textContent = '✓ Current Plan';
+      document.getElementById('btn-core').disabled = true;
+    }
+  } else {
+    document.getElementById('auth-nav-link').textContent = 'Sign In';
+  }
+});
+
+window.subscribe = async function(plan) {
+  if (!currentUser) {
+    window.location.href = '/auth.html?return=/pricing.html';
+    return;
+  }
+
+  const btn = document.getElementById(`btn-${plan}`);
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>Loading...';
+
+  try {
+    // Create Stripe Checkout session via our serverless function
+    const res = await fetch('https://us-central1-dynasty-football-hub-d76b0.cloudfunctions.net/createCheckout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        priceId: PRICES[plan],
+        userId: currentUser.uid,
+        email: currentUser.email,
+        successUrl: window.location.origin + '/account.html?success=true',
+        cancelUrl: window.location.origin + '/pricing.html',
+      })
+    });
+    const { sessionId } = await res.json();
+    await stripe.redirectToCheckout({ sessionId });
+  } catch(e) {
+    console.error(e);
+    alert('Could not start checkout. Please try again.');
+    btn.disabled = false;
+    btn.textContent = plan === 'core' ? 'Get Redraft Core' : 'Get Redraft Premium';
+  }
+}
+
+window.handleAuthNav = function() {
+  if (currentUser) {
+    window.location.href = '/account.html';
+  } else {
+    window.location.href = '/auth.html';
+  }
+}
+
+window.signOut = async function() {
+  await fbSignOut(auth);
+  window.location.reload();
+}
+</script>
+</body>
+</html>

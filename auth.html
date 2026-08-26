@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Sign In | Dynasty Football Hub</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#0a0a0a;color:#f0f0f0;min-height:100vh;display:flex;flex-direction:column}
+a{text-decoration:none;color:inherit}
+
+.nav{height:64px;background:rgba(10,10,10,0.97);border-bottom:1px solid #1e1e1e;display:flex;align-items:center;justify-content:space-between;padding:0 2rem}
+.nav-logo span{font-size:17px;font-weight:700;letter-spacing:1px;color:#f0f0f0;text-transform:uppercase}
+
+.auth-wrap{flex:1;display:flex;align-items:center;justify-content:center;padding:2rem}
+.auth-card{background:#161616;border:1px solid #1e1e1e;border-radius:16px;padding:2.5rem;width:100%;max-width:420px}
+.auth-logo{text-align:center;margin-bottom:2rem}
+.auth-logo div{font-size:22px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:#fff}
+.auth-logo span{color:#c0392b}
+.auth-title{font-size:20px;font-weight:700;color:#fff;margin-bottom:0.4rem;text-align:center}
+.auth-sub{font-size:13px;color:#666;text-align:center;margin-bottom:2rem}
+
+.tabs{display:flex;gap:0;margin-bottom:1.5rem;border:1px solid #2a2a2a;border-radius:8px;overflow:hidden}
+.tab{flex:1;padding:10px;font-size:14px;font-weight:600;color:#666;cursor:pointer;background:#0d0d0d;border:none;font-family:inherit;transition:all 0.15s}
+.tab.active{background:#c0392b;color:#fff}
+
+.form-group{margin-bottom:1rem}
+.form-label{font-size:12px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;display:block}
+.form-input{width:100%;background:#0d0d0d;border:1px solid #2a2a2a;border-radius:7px;padding:12px 14px;font-size:14px;color:#f0f0f0;outline:none;font-family:inherit;transition:border-color 0.2s}
+.form-input:focus{border-color:#c0392b}
+.form-input::placeholder{color:#444}
+
+.btn-primary{width:100%;background:#c0392b;color:#fff;padding:13px;border-radius:8px;font-size:15px;font-weight:600;border:none;cursor:pointer;transition:opacity 0.2s;margin-top:0.5rem}
+.btn-primary:hover{opacity:0.9}
+.btn-primary:disabled{opacity:0.4;cursor:not-allowed}
+
+.error-msg{background:rgba(192,57,43,0.1);border:1px solid rgba(192,57,43,0.3);border-radius:7px;padding:10px 14px;font-size:13px;color:#e87c73;margin-bottom:1rem;display:none}
+.success-msg{background:rgba(104,211,145,0.1);border:1px solid rgba(104,211,145,0.3);border-radius:7px;padding:10px 14px;font-size:13px;color:#68d391;margin-bottom:1rem;display:none}
+
+.divider{display:flex;align-items:center;gap:10px;margin:1.2rem 0;color:#333;font-size:12px}
+.divider::before,.divider::after{content:'';flex:1;height:1px;background:#1e1e1e}
+
+.footer-link{text-align:center;margin-top:1.2rem;font-size:13px;color:#555}
+.footer-link a{color:#c0392b}
+
+.spinner{display:inline-block;width:16px;height:16px;border:2px solid rgba(255,255,255,0.3);border-top-color:#fff;border-radius:50%;animation:spin 0.8s linear infinite;margin-right:8px;vertical-align:middle}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <a class="nav-logo" href="/"><span>Victory <span style="color:#c0392b">Formation</span></span></a>
+</nav>
+
+<div class="auth-wrap">
+  <div class="auth-card">
+    <div class="auth-logo">
+      <div>Dynasty Football <span>Hub</span></div>
+    </div>
+
+    <div class="tabs">
+      <button class="tab active" id="tab-signin" onclick="switchTab('signin')">Sign In</button>
+      <button class="tab" id="tab-signup" onclick="switchTab('signup')">Create Account</button>
+    </div>
+
+    <div id="error-msg" class="error-msg"></div>
+    <div id="success-msg" class="success-msg"></div>
+
+    <!-- SIGN IN -->
+    <div id="form-signin">
+      <div class="form-group">
+        <label class="form-label">Email</label>
+        <input class="form-input" type="email" id="signin-email" placeholder="you@example.com" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Password</label>
+        <input class="form-input" type="password" id="signin-password" placeholder="••••••••" />
+      </div>
+      <button class="btn-primary" id="signin-btn" onclick="signIn()">Sign In</button>
+      <div class="footer-link" style="margin-top:1rem">
+        <a href="#" onclick="showReset()">Forgot password?</a>
+      </div>
+    </div>
+
+    <!-- SIGN UP -->
+    <div id="form-signup" style="display:none">
+      <div class="form-group">
+        <label class="form-label">Email</label>
+        <input class="form-input" type="email" id="signup-email" placeholder="you@example.com" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Password</label>
+        <input class="form-input" type="password" id="signup-password" placeholder="Min 6 characters" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Confirm Password</label>
+        <input class="form-input" type="password" id="signup-confirm" placeholder="••••••••" />
+      </div>
+      <button class="btn-primary" id="signup-btn" onclick="signUp()">Create Account</button>
+    </div>
+
+    <!-- RESET PASSWORD -->
+    <div id="form-reset" style="display:none">
+      <div class="auth-sub" style="margin-bottom:1rem">Enter your email and we'll send you a reset link.</div>
+      <div class="form-group">
+        <label class="form-label">Email</label>
+        <input class="form-input" type="email" id="reset-email" placeholder="you@example.com" />
+      </div>
+      <button class="btn-primary" onclick="resetPassword()">Send Reset Link</button>
+      <div class="footer-link" style="margin-top:1rem">
+        <a href="#" onclick="switchTab('signin')">Back to sign in</a>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Firebase -->
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+import { getFirestore, doc, getDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+
+const firebaseConfig = {
+  apiKey: "AIzaSyA6wnyeb65VHsqNMu9Odxw4H_vzeF1mzYM",
+  authDomain: "dynasty-football-hub-d76b0.firebaseapp.com",
+  projectId: "dynasty-football-hub-d76b0",
+  storageBucket: "dynasty-football-hub-d76b0.firebasestorage.app",
+  messagingSenderId: "450779535418",
+  appId: "1:450779535418:web:fe5eee57b771e0fbfefd03"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+// Check if already logged in
+onAuthStateChanged(auth, async (user) => {
+  if (user) {
+    // Check subscription and redirect
+    const ref = doc(db, 'users', user.uid);
+    const snap = await getDoc(ref);
+    const data = snap.data() || {};
+    const returnUrl = new URLSearchParams(window.location.search).get('return') || '/';
+    window.location.href = returnUrl;
+  }
+});
+
+window.switchTab = function(tab) {
+  document.getElementById('tab-signin').classList.toggle('active', tab === 'signin');
+  document.getElementById('tab-signup').classList.toggle('active', tab === 'signup');
+  document.getElementById('form-signin').style.display = tab === 'signin' ? 'block' : 'none';
+  document.getElementById('form-signup').style.display = tab === 'signup' ? 'block' : 'none';
+  document.getElementById('form-reset').style.display = 'none';
+  clearMessages();
+}
+
+window.showReset = function() {
+  document.getElementById('form-signin').style.display = 'none';
+  document.getElementById('form-reset').style.display = 'block';
+  clearMessages();
+}
+
+window.signIn = async function() {
+  const email = document.getElementById('signin-email').value.trim();
+  const password = document.getElementById('signin-password').value;
+  if (!email || !password) return showError('Please fill in all fields');
+  setLoading('signin-btn', true);
+  try {
+    await signInWithEmailAndPassword(auth, email, password);
+    const returnUrl = new URLSearchParams(window.location.search).get('return') || '/';
+    window.location.href = returnUrl;
+  } catch(e) {
+    showError(getErrorMessage(e.code));
+  }
+  setLoading('signin-btn', false);
+}
+
+window.signUp = async function() {
+  const email = document.getElementById('signup-email').value.trim();
+  const password = document.getElementById('signup-password').value;
+  const confirm = document.getElementById('signup-confirm').value;
+  if (!email || !password) return showError('Please fill in all fields');
+  if (password !== confirm) return showError('Passwords do not match');
+  if (password.length < 6) return showError('Password must be at least 6 characters');
+  setLoading('signup-btn', true);
+  try {
+    await createUserWithEmailAndPassword(auth, email, password);
+    window.location.href = '/pricing.html';
+  } catch(e) {
+    showError(getErrorMessage(e.code));
+  }
+  setLoading('signup-btn', false);
+}
+
+window.resetPassword = async function() {
+  const email = document.getElementById('reset-email').value.trim();
+  if (!email) return showError('Please enter your email');
+  try {
+    await sendPasswordResetEmail(auth, email);
+    showSuccess('Reset link sent! Check your email.');
+  } catch(e) {
+    showError(getErrorMessage(e.code));
+  }
+}
+
+function showError(msg) {
+  const el = document.getElementById('error-msg');
+  el.textContent = msg; el.style.display = 'block';
+  document.getElementById('success-msg').style.display = 'none';
+}
+function showSuccess(msg) {
+  const el = document.getElementById('success-msg');
+  el.textContent = msg; el.style.display = 'block';
+  document.getElementById('error-msg').style.display = 'none';
+}
+function clearMessages() {
+  document.getElementById('error-msg').style.display = 'none';
+  document.getElementById('success-msg').style.display = 'none';
+}
+function setLoading(btnId, loading) {
+  const btn = document.getElementById(btnId);
+  btn.disabled = loading;
+  btn.innerHTML = loading ? '<span class="spinner"></span>Please wait...' : btnId === 'signin-btn' ? 'Sign In' : 'Create Account';
+}
+function getErrorMessage(code) {
+  const msgs = {
+    'auth/user-not-found': 'No account found with that email',
+    'auth/wrong-password': 'Incorrect password',
+    'auth/email-already-in-use': 'An account with that email already exists',
+    'auth/weak-password': 'Password must be at least 6 characters',
+    'auth/invalid-email': 'Please enter a valid email address',
+    'auth/invalid-credential': 'Incorrect email or password',
+    'auth/too-many-requests': 'Too many attempts. Please try again later',
+  };
+  return msgs[code] || 'Something went wrong. Please try again.';
+}
+</script>
+</body>
+</html>

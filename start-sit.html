@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Who Do I Start | Dynasty Football Hub</title>
+<meta name="description" content="Victory Formation Start/Sit Tool — get VF's weekly recommendation on who to start based on your league settings." />
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#0a0a0a;color:#f0f0f0;min-height:100vh}
+a{text-decoration:none;color:inherit}
+.nav{position:sticky;top:0;z-index:100;height:64px;background:rgba(10,10,10,0.97);border-bottom:1px solid #1e1e1e;display:flex;align-items:center;justify-content:space-between;padding:0 2rem}
+.nav-logo span{font-size:17px;font-weight:700;letter-spacing:1px;color:#f0f0f0;text-transform:uppercase}
+.nav-links{display:flex;gap:1.5rem;align-items:center}
+.nav-links a{font-size:14px;font-weight:500;color:#666;text-decoration:none;transition:color 0.2s}
+.nav-links a:hover{color:#c0392b}
+.nav-dropdown{position:relative}
+.nav-dropdown-toggle{font-size:14px;font-weight:500;color:#666;cursor:pointer;display:flex;align-items:center;gap:5px;background:none;border:none;font-family:inherit;transition:color 0.2s}
+.nav-dropdown-toggle:hover{color:#c0392b}
+.nav-dropdown-toggle::after{content:'▾';font-size:10px}
+.nav-dropdown-menu{position:absolute;top:100%;left:50%;transform:translateX(-50%);background:#111;border:1px solid #1e1e1e;border-radius:8px;overflow:hidden;min-width:180px;display:none;box-shadow:0 8px 24px rgba(0,0,0,0.5);z-index:200;padding-top:12px}
+.nav-dropdown-menu::before{content:'';position:absolute;top:0;left:0;right:0;height:12px;background:transparent}
+.nav-dropdown:hover .nav-dropdown-menu{display:block}
+.nav-dropdown-menu a{display:block;padding:10px 16px;font-size:13px;color:#888;border-bottom:1px solid #1a1a1a;white-space:nowrap;text-decoration:none;transition:all 0.15s}
+.nav-dropdown-menu a:last-child{border-bottom:none}
+.nav-dropdown-menu a:hover{background:#1a1a1a;color:#c0392b}
+.nav-yt{display:flex;align-items:center;gap:8px;background:#c0392b;color:#fff;font-size:13px;font-weight:600;padding:9px 16px;border-radius:6px;border:none;cursor:pointer;text-decoration:none}
+
+.page-header{background:linear-gradient(180deg,#140303 0%,#0a0a0a 100%);border-bottom:1px solid #1e1e1e;padding:3rem 2rem 2.5rem;text-align:center}
+.page-header .tag{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:#c0392b;margin-bottom:0.8rem}
+.page-header h1{font-size:38px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:#fff;margin-bottom:0.5rem}
+.page-header h1 span{color:#c0392b}
+.page-header p{font-size:15px;color:#777;max-width:520px;margin:0 auto}
+
+.main{max-width:800px;margin:0 auto;padding:2rem}
+
+/* SETTINGS */
+.settings-bar{background:#161616;border:1px solid #1e1e1e;border-radius:10px;padding:1.2rem 1.5rem;margin-bottom:1.5rem;display:flex;align-items:center;flex-wrap:wrap;gap:1.5rem}
+.setting-group{display:flex;flex-direction:column;gap:6px}
+.setting-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.7px;color:#555}
+.toggle-row{display:flex;gap:6px}
+.tog{padding:7px 14px;border-radius:6px;border:1px solid #2a2a2a;background:#0d0d0d;color:#555;font-size:13px;font-weight:600;cursor:pointer;transition:all 0.15s}
+.tog:hover{border-color:#555;color:#888}
+.tog.on{background:rgba(192,57,43,0.15);border-color:#c0392b;color:#e87c73}
+.sdiv{width:1px;height:40px;background:#1e1e1e;align-self:center}
+
+/* SEARCH */
+.search-section{background:#161616;border:1px solid #1e1e1e;border-radius:10px;padding:1.5rem;margin-bottom:1.5rem}
+.search-title{font-size:14px;font-weight:600;color:#f0f0f0;margin-bottom:0.4rem}
+.search-sub{font-size:12px;color:#555;margin-bottom:1rem}
+.search-wrap{position:relative;margin-bottom:0.8rem}
+.search-input{width:100%;background:#0d0d0d;border:1px solid #2a2a2a;border-radius:7px;padding:11px 14px 11px 36px;font-size:14px;color:#f0f0f0;outline:none;font-family:inherit;transition:border-color 0.2s}
+.search-input:focus{border-color:#c0392b}
+.search-input::placeholder{color:#444}
+.search-icon{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:#444;font-size:15px}
+.search-dropdown{position:absolute;top:100%;left:0;right:0;background:#1a1a1a;border:1px solid #2a2a2a;border-radius:7px;margin-top:4px;max-height:260px;overflow-y:auto;z-index:50;box-shadow:0 8px 24px rgba(0,0,0,0.5);display:none}
+.search-result{padding:10px 14px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #111;transition:background 0.1s}
+.search-result:last-child{border-bottom:none}
+.search-result:hover{background:#222}
+.sr-left{display:flex;align-items:center;gap:10px}
+.sr-name{font-size:14px;font-weight:500;color:#f0f0f0}
+.sr-team{font-size:12px;color:#555}
+.sr-rank{font-size:13px;font-weight:700;color:#c0392b}
+
+/* PLAYER CHIPS */
+.player-chips{display:flex;flex-wrap:wrap;gap:8px}
+.player-chip{background:#0d0d0d;border:1px solid #2a2a2a;border-radius:8px;padding:8px 12px;display:flex;align-items:center;gap:8px;transition:border-color 0.15s}
+.player-chip:hover{border-color:#333}
+.chip-pos{font-size:10px;font-weight:700;padding:2px 6px;border-radius:3px}
+.pos-QB{background:rgba(99,179,237,0.12);color:#63b3ed}
+.pos-RB{background:rgba(104,211,145,0.12);color:#68d391}
+.pos-WR{background:rgba(246,173,85,0.12);color:#f6ad55}
+.pos-TE{background:rgba(192,57,43,0.18);color:#e87c73}
+.chip-name{font-size:13px;font-weight:600;color:#f0f0f0}
+.chip-remove{background:none;border:none;color:#444;cursor:pointer;font-size:16px;line-height:1;padding:0 2px;transition:color 0.15s}
+.chip-remove:hover{color:#e24b4a}
+.empty-chips{font-size:13px;color:#333;padding:0.5rem 0}
+
+/* VERDICT */
+.verdict-section{display:none}
+.verdict-section.show{display:block}
+
+.verdict-header{text-align:center;margin-bottom:1.5rem}
+.verdict-header h2{font-size:20px;font-weight:700;color:#fff;margin-bottom:0.3rem}
+.verdict-header p{font-size:13px;color:#555}
+
+.player-cards{display:flex;flex-direction:column;gap:10px}
+.player-card{background:#161616;border:1px solid #1e1e1e;border-radius:12px;padding:1.2rem 1.5rem;display:flex;align-items:center;justify-content:space-between;gap:1rem;transition:border-color 0.2s}
+.player-card.rank-1{border-color:#68d391;background:rgba(104,211,145,0.04)}
+.player-card.rank-2{border-color:#333}
+.player-card.rank-other{border-color:#1e1e1e;opacity:0.8}
+.pc-left{display:flex;align-items:center;gap:12px}
+.pc-num{font-size:28px;font-weight:800;color:#333;min-width:32px}
+.pc-num.first{color:#68d391}
+.pc-num.second{color:#aaa}
+.pc-info{display:flex;flex-direction:column;gap:3px}
+.pc-name{font-size:16px;font-weight:700;color:#f0f0f0}
+.pc-meta{font-size:12px;color:#555;display:flex;align-items:center;gap:8px}
+.pc-right{display:flex;flex-direction:column;align-items:flex-end;gap:6px}
+.pc-rank{font-size:22px;font-weight:800;color:#c0392b}
+.pc-rank-label{font-size:11px;color:#444;text-transform:uppercase;letter-spacing:0.5px}
+
+/* MATCHUP BADGE */
+.opp-badge{font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px}
+.opp-easy{background:rgba(104,211,145,0.15);color:#68d391}
+.opp-avg{background:rgba(246,173,85,0.15);color:#f6ad55}
+.opp-hard{background:rgba(226,102,50,0.15);color:#e2703a}
+.opp-tough{background:rgba(192,57,43,0.15);color:#e87c73}
+
+/* TAG */
+.tag-badge{font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px}
+.tag-NB{background:rgba(104,211,145,0.15);color:#68d391}
+.tag-BB{background:rgba(246,173,85,0.15);color:#f6ad55}
+.tag-ST{background:rgba(99,179,237,0.15);color:#63b3ed}
+.tag-FA{background:rgba(192,57,43,0.15);color:#e87c73}
+.tag-IR{background:rgba(160,100,220,0.15);color:#c084fc}
+.tag-SK{background:rgba(255,220,100,0.15);color:#fcd34d}
+
+/* START BADGE */
+.start-badge{padding:6px 14px;border-radius:6px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px}
+.start-yes{background:rgba(104,211,145,0.15);color:#68d391;border:1px solid rgba(104,211,145,0.3)}
+.start-no{background:rgba(192,57,43,0.1);color:#e87c73;border:1px solid rgba(192,57,43,0.2)}
+
+.btn-outline{background:transparent;color:#888;border:1px solid #2a2a2a;padding:10px 20px;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;transition:all 0.2s;font-family:inherit;margin-top:1rem}
+.btn-outline:hover{border-color:#c0392b;color:#c0392b}
+
+.not-found{background:#161616;border:1px solid #333;border-radius:8px;padding:1rem;font-size:13px;color:#666;text-align:center}
+
+.empty-state{padding:3rem;text-align:center;color:#333;font-size:14px}
+.footer{background:#080808;border-top:1px solid #1e1e1e;padding:1.5rem 2rem;text-align:center;margin-top:3rem}
+.footer p{font-size:12px;color:#333}
+.footer span{color:#c0392b}
+</style>
+<script type="module" src="/paywall.js" data-tier="premium"></script>
+</head>
+<body>
+
+<nav class="nav">
+  <a class="nav-logo" href="/"><span>Victory Formation</span></a>
+  <div class="nav-links">
+    <a href="/">Home</a>
+    <a href="/">Episodes</a>
+    <div class="nav-dropdown">
+      <button class="nav-dropdown-toggle">Rankings</button>
+      <div class="nav-dropdown-menu">
+        <a href="/#rankings">🏈 Dynasty Rankings</a>
+        <a href="/redraft-rankings.html">📋 Redraft Rankings</a>
+        <a href="/weekly-rankings.html">📅 Weekly Rankings</a>
+      </div>
+    </div>
+    <div class="nav-dropdown">
+      <button class="nav-dropdown-toggle">Tools</button>
+      <div class="nav-dropdown-menu">
+        <a href="/war-tool.html">⚔️ VF WAR Tool</a>
+        <a href="/trade-calculator.html">🔄 Dynasty Calculator</a>
+        <a href="/redraft-calculator.html">🔄 Redraft Calculator</a>
+        <a href="/dynasty-duel.html">🏈 Dynasty Duel</a>
+        <a href="/start-sit.html" style="color:#c0392b">🎯 Who Do I Start</a>
+      </div>
+    </div>
+    <a href="/">Support Us</a>
+    <a href="/pricing.html" style="color:#c0392b;font-weight:600">Go Premium</a>
+    <a href="/auth.html" style="font-size:13px;color:#666">Sign In</a>
+  </div>
+  <a href="https://www.youtube.com/@victoryformation8924" target="_blank" class="nav-yt">&#9654; YouTube</a>
+</nav>
+
+<div class="page-header">
+  <div class="tag">Victory Formation</div>
+  <h1>Who Do I <span>Start?</span></h1>
+  <p>Add your flex battle players and get VF's weekly recommendation based on matchups and rankings.</p>
+</div>
+
+<div class="main">
+
+  <!-- SETTINGS -->
+  <div class="settings-bar">
+    <div class="setting-group">
+      <div class="setting-label">Scoring</div>
+      <div class="toggle-row">
+        <div class="tog on" id="sc-ppr" onclick="setSetting('sc','ppr')">PPR</div>
+        <div class="tog" id="sc-half" onclick="setSetting('sc','half')">Half PPR</div>
+      </div>
+    </div>
+    <div class="sdiv"></div>
+    <div class="setting-group">
+      <div class="setting-label">QB Format</div>
+      <div class="toggle-row">
+        <div class="tog on" id="qb-1qb" onclick="setSetting('qb','1qb')">1QB</div>
+        <div class="tog" id="qb-sf" onclick="setSetting('qb','sf')">Superflex</div>
+      </div>
+    </div>
+    <div class="sdiv"></div>
+    <div class="setting-group">
+      <div class="setting-label">TE Premium</div>
+      <div class="toggle-row">
+        <div class="tog on" id="tep-off" onclick="setSetting('tep','off')">Off</div>
+        <div class="tog" id="tep-on" onclick="setSetting('tep','on')">TEP</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SEARCH -->
+  <div class="search-section">
+    <div class="search-title">Add Players to Compare</div>
+    <div class="search-sub">Search for 2-4 players you're deciding between</div>
+    <div style="position:relative">
+      <span class="search-icon">&#128269;</span>
+      <input class="search-input" type="text" id="player-search" placeholder="Search players..." oninput="searchPlayers()" onblur="hideDropdown()" autocomplete="off" />
+      <div class="search-dropdown" id="search-dropdown"></div>
+    </div>
+    <div class="player-chips" id="player-chips">
+      <div class="empty-chips">No players added yet — search above</div>
+    </div>
+  </div>
+
+  <!-- VERDICT -->
+  <div class="verdict-section" id="verdict-section">
+    <div class="verdict-header">
+      <h2 id="verdict-title">VF Recommendation</h2>
+      <p id="verdict-sub"></p>
+    </div>
+    <div class="player-cards" id="player-cards"></div>
+    <div style="text-align:center">
+      <button class="btn-outline" onclick="clearAll()">&#8592; Start Over</button>
+    </div>
+  </div>
+
+</div>
+
+<footer class="footer">
+  <p><span>Dynasty Football Hub</span> &middot; Who Do I Start &middot; Victory Formation &middot; &copy; 2026</p>
+</footer>
+
+<script>
+const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRCREsonHdIpLN7ifVYt_jOE7ursgt7ZgVojncOwPL3skojNiV2TwdW6IU_phFrjQKlEgPOnwViYHai/pub?gid=0&single=true&output=csv';
+
+const cfg = { sc: 'ppr', qb: '1qb', tep: 'off' };
+let weeklyPlayers = [];
+let selectedPlayers = [];
+
+const TAG_LABELS = {
+  'NB': 'No-Brainer', 'BB': 'Boom/Bust', 'ST': 'Streamer',
+  'FA': 'Fade', 'IR': 'Injury Risk', 'SK': 'Stack'
+};
+
+function parseCSV(row) {
+  const cols = []; let cur = '', inQ = false;
+  for (let i = 0; i < row.length; i++) {
+    const c = row[i];
+    if (c === '"') { inQ = !inQ; }
+    else if (c === ',' && !inQ) { cols.push(cur.trim()); cur = ''; }
+    else { cur += c; }
+  }
+  cols.push(cur.trim()); return cols;
+}
+
+async function loadSheet() {
+  try {
+    const res = await fetch(SHEET_URL);
+    const text = await res.text();
+    const rows = text.trim().split('\n').slice(1);
+    weeklyPlayers = rows.map(row => {
+      const c = parseCSV(row);
+      return {
+        name:     c[0] || '',
+        team:     c[1] || '',
+        pos:      c[2] || '',
+        opp:      c[3] || '',
+        oppRank:  parseInt(c[4]) || null,
+        pprRank:  parseInt(c[5]) || null,
+        halfRank: parseInt(c[6]) || null,
+        sfRank:   parseInt(c[7]) || null,
+        tepRank:  parseInt(c[8]) || null,
+        tag:      c[9]?.trim() || '',
+      };
+    }).filter(p => p.name && (p.pprRank || p.sfRank || p.tepRank));
+  } catch(e) {
+    console.error('Failed to load weekly rankings', e);
+  }
+}
+
+function getRank(p) {
+  if (cfg.tep === 'on' && p.pos === 'TE' && p.tepRank) return p.tepRank;
+  if (cfg.qb === 'sf' && p.pos === 'QB' && p.sfRank) return p.sfRank;
+  if (cfg.sc === 'half' && p.halfRank) return p.halfRank;
+  return p.pprRank || p.sfRank || p.tepRank || null;
+}
+
+function getOppClass(rank) {
+  if (!rank) return '';
+  if (rank <= 8) return 'opp-easy';
+  if (rank <= 16) return 'opp-avg';
+  if (rank <= 24) return 'opp-hard';
+  return 'opp-tough';
+}
+
+function getOppLabel(rank) {
+  if (!rank) return '—';
+  if (rank <= 8) return `#${rank} ✓ Easy`;
+  if (rank <= 16) return `#${rank} Average`;
+  if (rank <= 24) return `#${rank} Tough`;
+  return `#${rank} ✗ Very Tough`;
+}
+
+function setSetting(k, v) {
+  cfg[k] = v;
+  document.querySelectorAll(`[id^="${k}-"]`).forEach(e => e.classList.remove('on'));
+  document.getElementById(`${k}-${v}`).classList.add('on');
+  if (selectedPlayers.length >= 2) renderVerdict();
+}
+
+function searchPlayers() {
+  const q = document.getElementById('player-search').value.toLowerCase().trim();
+  const dropdown = document.getElementById('search-dropdown');
+  if (!q || q.length < 2) { dropdown.style.display = 'none'; return; }
+
+  const results = weeklyPlayers
+    .filter(p => !selectedPlayers.find(s => s.name === p.name))
+    .filter(p => p.name.toLowerCase().includes(q) || p.team.toLowerCase().includes(q))
+    .slice(0, 8);
+
+  if (!results.length) { dropdown.style.display = 'none'; return; }
+
+  dropdown.innerHTML = results.map(p => {
+    const rank = getRank(p);
+    return `<div class="search-result" onmousedown="addPlayer('${p.name.replace(/'/g,"\\'")}')">
+      <div class="sr-left">
+        <span class="pos-badge chip-pos pos-${p.pos}">${p.pos}</span>
+        <div>
+          <div class="sr-name">${p.name}</div>
+          <div class="sr-team">${p.team} · vs ${p.opp}</div>
+        </div>
+      </div>
+      <div class="sr-rank">${rank ? `#${rank}` : 'NR'}</div>
+    </div>`;
+  }).join('');
+  dropdown.style.display = 'block';
+}
+
+function hideDropdown() {
+  setTimeout(() => { document.getElementById('search-dropdown').style.display = 'none'; }, 150);
+}
+
+function addPlayer(name) {
+  if (selectedPlayers.length >= 4) return;
+  const p = weeklyPlayers.find(p => p.name === name);
+  if (!p || selectedPlayers.find(s => s.name === name)) return;
+  selectedPlayers.push(p);
+  document.getElementById('player-search').value = '';
+  renderChips();
+  if (selectedPlayers.length >= 2) renderVerdict();
+}
+
+function removePlayer(name) {
+  selectedPlayers = selectedPlayers.filter(p => p.name !== name);
+  renderChips();
+  if (selectedPlayers.length >= 2) renderVerdict();
+  else document.getElementById('verdict-section').classList.remove('show');
+}
+
+function clearAll() {
+  selectedPlayers = [];
+  renderChips();
+  document.getElementById('verdict-section').classList.remove('show');
+}
+
+function renderChips() {
+  const container = document.getElementById('player-chips');
+  if (!selectedPlayers.length) {
+    container.innerHTML = '<div class="empty-chips">No players added yet — search above</div>';
+    return;
+  }
+  container.innerHTML = selectedPlayers.map(p => `
+    <div class="player-chip">
+      <span class="chip-pos pos-${p.pos}">${p.pos}</span>
+      <span class="chip-name">${p.name}</span>
+      <button class="chip-remove" onclick="removePlayer('${p.name.replace(/'/g,"\\'")}')">✕</button>
+    </div>`).join('');
+}
+
+function renderVerdict() {
+  // Sort players by their rank (lower = better)
+  const ranked = [...selectedPlayers].map(p => ({
+    ...p, rank: getRank(p)
+  })).sort((a, b) => {
+    if (a.rank && b.rank) return a.rank - b.rank;
+    if (a.rank) return -1;
+    if (b.rank) return 1;
+    return 0;
+  });
+
+  const section = document.getElementById('verdict-section');
+  section.classList.add('show');
+
+  // Title
+  const starter = ranked[0];
+  document.getElementById('verdict-title').textContent = `Start ${starter.name}`;
+  document.getElementById('verdict-sub').textContent = `VF's Week 1 recommendation based on your league settings`;
+
+  // Cards
+  const cards = document.getElementById('player-cards');
+  cards.innerHTML = ranked.map((p, i) => {
+    const isStart = i === 0;
+    const oppClass = getOppClass(p.oppRank);
+    const oppLabel = getOppLabel(p.oppRank);
+    const tagKey = p.tag?.toUpperCase().replace(/[^A-Z]/g,'').substring(0,2);
+    const tagLabel = TAG_LABELS[tagKey] || p.tag;
+    const tagHtml = p.tag ? `<span class="tag-badge tag-${tagKey}">${tagLabel}</span>` : '';
+    const numClass = i === 0 ? 'first' : i === 1 ? 'second' : '';
+    const cardClass = i === 0 ? 'rank-1' : i === 1 ? 'rank-2' : 'rank-other';
+    const rankLabel = p.rank ? `#${p.rank} this week` : 'Not ranked';
+
+    return `<div class="player-card ${cardClass}">
+      <div class="pc-left">
+        <div class="pc-num ${numClass}">${i + 1}</div>
+        <div class="pc-info">
+          <div class="pc-name">${p.name} <span class="chip-pos pos-${p.pos}" style="font-size:10px;padding:2px 6px;border-radius:3px">${p.pos}</span></div>
+          <div class="pc-meta">
+            <span>${p.team} · vs ${p.opp}</span>
+            ${p.oppRank ? `<span class="opp-badge ${oppClass}">${oppLabel}</span>` : ''}
+            ${tagHtml}
+          </div>
+        </div>
+      </div>
+      <div class="pc-right">
+        <div class="pc-rank">${p.rank ? `#${p.rank}` : 'NR'}</div>
+        <div class="pc-rank-label">${rankLabel}</div>
+        <span class="start-badge ${isStart ? 'start-yes' : 'start-no'}">${isStart ? '✓ Start' : 'Sit'}</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+loadSheet();
+</script>
+</body>
+</html>

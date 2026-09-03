@@ -1,6 +1,3 @@
-// paywall.js — include on any page that requires a subscription
-// Usage: <script type="module" src="/paywall.js" data-tier="core"></script>
-
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
 import { getAuth, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 import { getFirestore, doc, getDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
@@ -18,27 +15,26 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-// Get required tier from script tag
 const scripts = document.querySelectorAll('script[src*="paywall"]');
 const requiredTier = scripts[scripts.length-1]?.dataset?.tier || 'core';
-
 const tierLevel = { free: 0, core: 1, premium: 2 };
 
 function showPaywall(user) {
-  // Hide main content
-  document.querySelectorAll('.main, .page-header + div, #rankings-table, .trade-area, #matchup-area').forEach(el => {
+  document.querySelectorAll('.main, #rankings-table, .trade-area, #matchup-area').forEach(el => {
     el.style.display = 'none';
   });
 
-  // Show paywall overlay
   const overlay = document.createElement('div');
   overlay.style.cssText = 'max-width:500px;margin:4rem auto;padding:2rem;text-align:center;';
+  
+  const tierName = requiredTier === 'core' ? 'Redraft Core ($3/mo)' : 'Redraft Premium ($7/mo)';
+  
   overlay.innerHTML = `
     <div style="background:#161616;border:1px solid #c0392b;border-radius:16px;padding:3rem 2rem;">
       <div style="font-size:40px;margin-bottom:1rem">🏈</div>
       <div style="font-size:22px;font-weight:800;color:#fff;margin-bottom:0.5rem">Premium Feature</div>
       <div style="font-size:14px;color:#666;margin-bottom:2rem;line-height:1.6">
-        This tool requires a <strong style="color:#e87c73">${requiredTier === 'core' ? 'Redraft Core ($3/mo)' : 'Redraft Premium ($7/mo)'}</strong> subscription.
+        This tool requires a <strong style="color:#e87c73">${tierName}</strong> subscription.
         <br>Dynasty tools are always free.
       </div>
       ${user ? `
@@ -66,23 +62,28 @@ onAuthStateChanged(auth, async (user) => {
     return;
   }
 
-  const ref = doc(db, 'users', user.uid);
-  const snap = await getDoc(ref);
-  const data = snap.data() || {};
-  const userTier = data.tier || 'free';
+  try {
+    const ref = doc(db, 'Users', user.uid);
+    const snap = await getDoc(ref);
+    const data = snap.exists() ? snap.data() : {};
+    const userTier = data.tier || 'free';
 
-  if (tierLevel[userTier] < tierLevel[requiredTier]) {
+    if (tierLevel[userTier] >= tierLevel[requiredTier]) {
+      // Access granted — add account link to nav
+      const navLinks = document.querySelector('.nav-links');
+      if (navLinks) {
+        const accountLink = document.createElement('a');
+        accountLink.href = '/account.html';
+        accountLink.style.cssText = 'font-size:13px;color:#c0392b;font-weight:600;text-decoration:none;';
+        accountLink.textContent = '👤 My Account';
+        navLinks.appendChild(accountLink);
+      }
+    } else {
+      showPaywall(user);
+    }
+  } catch(e) {
+    console.error('Firestore error:', e);
+    // If Firestore fails, show paywall to be safe
     showPaywall(user);
-    return;
-  }
-
-  // User has access — add account link to nav
-  const navLinks = document.querySelector('.nav-links') || document.querySelector('.nav');
-  if (navLinks) {
-    const accountLink = document.createElement('a');
-    accountLink.href = '/account.html';
-    accountLink.style.cssText = 'font-size:13px;color:#c0392b;font-weight:600;text-decoration:none;';
-    accountLink.textContent = '👤 My Account';
-    navLinks.appendChild(accountLink);
   }
 });

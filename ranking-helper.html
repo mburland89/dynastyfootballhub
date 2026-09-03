@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>VF Ranking Helper | Private</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#0a0a0a;color:#f0f0f0;min-height:100vh;padding:2rem}
+h1{font-size:24px;font-weight:800;color:#fff;margin-bottom:0.3rem}
+.sub{font-size:14px;color:#555;margin-bottom:2rem}
+
+.controls{display:flex;gap:1rem;align-items:center;margin-bottom:1.5rem;flex-wrap:wrap}
+.select{background:#161616;border:1px solid #2a2a2a;border-radius:7px;padding:10px 14px;font-size:14px;color:#f0f0f0;outline:none;font-family:inherit}
+.btn{background:#c0392b;color:#fff;padding:10px 20px;border-radius:7px;font-size:14px;font-weight:600;border:none;cursor:pointer}
+.btn:disabled{opacity:0.4;cursor:not-allowed}
+.btn-green{background:#27ae60;color:#fff;padding:10px 20px;border-radius:7px;font-size:14px;font-weight:600;border:none;cursor:pointer}
+.btn-outline{background:transparent;border:1px solid #2a2a2a;color:#888;padding:10px 20px;border-radius:7px;font-size:14px;font-weight:600;cursor:pointer}
+.btn-outline:hover{border-color:#555;color:#f0f0f0}
+
+.filter-bar{display:flex;gap:8px;margin-bottom:1rem;flex-wrap:wrap}
+.filter-btn{padding:6px 14px;border-radius:6px;border:1px solid #2a2a2a;background:#161616;color:#555;font-size:12px;font-weight:600;cursor:pointer;transition:all 0.15s}
+.filter-btn.active{border-color:#c0392b;color:#e87c73;background:rgba(192,57,43,0.1)}
+
+.columns{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem}
+.col-header{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:#555;margin-bottom:0.8rem;display:flex;align-items:center;justify-content:space-between}
+.col-header span{font-size:11px;color:#333;font-weight:400;text-transform:none;letter-spacing:0}
+
+/* LEFT COLUMN - Last week reference */
+.ref-list{display:flex;flex-direction:column;gap:4px}
+.ref-row{background:#111;border:1px solid #1a1a1a;border-radius:6px;padding:8px 12px;display:flex;align-items:center;gap:10px}
+.ref-rank{font-size:13px;font-weight:700;color:#333;min-width:26px}
+.ref-name{font-size:13px;color:#666}
+.ref-pts{font-size:12px;color:#444;margin-left:auto}
+
+/* RIGHT COLUMN - This week drag */
+.week-list{display:flex;flex-direction:column;gap:4px;min-height:200px}
+.week-row{background:#161616;border:1px solid #1e1e1e;border-radius:6px;padding:8px 12px;display:flex;align-items:center;gap:10px;cursor:grab;transition:all 0.15s;user-select:none;position:relative}
+.week-row:active{cursor:grabbing}
+.week-row.dragging{opacity:0.4;border-color:#c0392b}
+.week-row.drag-over{border-color:#c0392b;background:rgba(192,57,43,0.05)}
+.week-row.moved-up{border-left:3px solid #68d391}
+.week-row.moved-down{border-left:3px solid #e24b4a}
+.week-row.new-pos{border-left:3px solid #f6ad55}
+
+.week-rank{font-size:13px;font-weight:700;color:#555;min-width:26px}
+.week-name{font-size:13px;font-weight:600;color:#f0f0f0;flex:1}
+.week-team{font-size:11px;color:#444}
+
+.opp-badge{font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px;white-space:nowrap}
+.opp-easy{background:rgba(104,211,145,0.15);color:#68d391}
+.opp-avg{background:rgba(246,173,85,0.15);color:#f6ad55}
+.opp-hard{background:rgba(226,102,50,0.15);color:#e2703a}
+.opp-tough{background:rgba(192,57,43,0.15);color:#e87c73}
+
+.pts-badge{font-size:11px;color:#555;white-space:nowrap}
+.pts-good{color:#68d391}
+.pts-avg{color:#f6ad55}
+.pts-bad{color:#e24b4a}
+
+.drag-handle{color:#333;font-size:16px;cursor:grab;margin-right:2px}
+
+.pos-badge{font-size:10px;font-weight:700;padding:2px 5px;border-radius:3px}
+.pos-QB{background:rgba(99,179,237,0.12);color:#63b3ed}
+.pos-RB{background:rgba(104,211,145,0.12);color:#68d391}
+.pos-WR{background:rgba(246,173,85,0.12);color:#f6ad55}
+.pos-TE{background:rgba(192,57,43,0.18);color:#e87c73}
+
+.spinner{display:inline-block;width:16px;height:16px;border:2px solid #333;border-top-color:#c0392b;border-radius:50%;animation:spin 0.8s linear infinite;margin-right:8px;vertical-align:middle}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.empty{padding:3rem;text-align:center;color:#333;font-size:14px}
+.note{background:#111;border:1px solid #1e1e1e;border-radius:8px;padding:1rem;font-size:12px;color:#555;margin-bottom:1.5rem;line-height:1.6}
+.note strong{color:#888}
+
+.search-bar{background:#161616;border:1px solid #2a2a2a;border-radius:7px;padding:8px 14px;font-size:13px;color:#f0f0f0;outline:none;font-family:inherit;width:200px}
+.search-bar::placeholder{color:#444}
+
+.export-section{margin-top:1.5rem;padding:1.5rem;background:#161616;border:1px solid #1e1e1e;border-radius:10px}
+.export-title{font-size:14px;font-weight:600;color:#f0f0f0;margin-bottom:0.8rem}
+.export-sub{font-size:12px;color:#555;margin-bottom:1rem}
+</style>
+</head>
+<body>
+
+<h1>📋 VF Ranking Helper <span style="font-size:14px;color:#c0392b;font-weight:400">— Private</span></h1>
+<div class="sub">Build weekly rankings using last week as a reference. Drag to reorder on the right.</div>
+
+<div class="note">
+  <strong>How to use:</strong> Select current and previous week, click Load. 
+  Left column = last week's rankings + points scored. Right column = this week's starting point (same order). 
+  Drag players up/down on the right to set your new rankings. Green left border = moved up, red = moved down. 
+  When done click Export CSV to download your weekly sheet.
+</div>
+
+<div class="controls">
+  <div>
+    <div style="font-size:11px;color:#555;margin-bottom:4px">Previous Week Sheet URL</div>
+    <input type="text" id="prev-url" placeholder="Paste last week's CSV URL..." 
+      style="background:#161616;border:1px solid #2a2a2a;border-radius:7px;padding:10px 14px;font-size:13px;color:#f0f0f0;outline:none;font-family:inherit;width:380px" />
+  </div>
+  <div>
+    <div style="font-size:11px;color:#555;margin-bottom:4px">NFL Week (for stats)</div>
+    <select class="select" id="week-select">
+      <option value="1">Week 1</option>
+      <option value="2">Week 2</option>
+      <option value="3">Week 3</option>
+      <option value="4">Week 4</option>
+      <option value="5">Week 5</option>
+      <option value="6">Week 6</option>
+      <option value="7">Week 7</option>
+      <option value="8">Week 8</option>
+      <option value="9">Week 9</option>
+      <option value="10">Week 10</option>
+      <option value="11">Week 11</option>
+      <option value="12">Week 12</option>
+      <option value="13">Week 13</option>
+      <option value="14">Week 14</option>
+      <option value="15">Week 15</option>
+      <option value="16">Week 16</option>
+      <option value="17">Week 17</option>
+    </select>
+  </div>
+  <div style="align-self:flex-end">
+    <button class="btn" id="load-btn" onclick="loadData()">Load</button>
+  </div>
+</div>
+
+<div class="filter-bar" id="filter-bar" style="display:none">
+  <div class="filter-btn active" onclick="setFilter('all',this)">All</div>
+  <div class="filter-btn" onclick="setFilter('QB',this)">QB</div>
+  <div class="filter-btn" onclick="setFilter('RB',this)">RB</div>
+  <div class="filter-btn" onclick="setFilter('WR',this)">WR</div>
+  <div class="filter-btn" onclick="setFilter('TE',this)">TE</div>
+  <input class="search-bar" type="text" placeholder="Search..." id="search-bar" oninput="renderColumns()" />
+</div>
+
+<div class="columns" id="columns" style="display:none">
+  <div>
+    <div class="col-header">Last Week <span>rank · points scored</span></div>
+    <div class="ref-list" id="ref-list"></div>
+  </div>
+  <div>
+    <div class="col-header">This Week <span>drag to reorder</span></div>
+    <div class="week-list" id="week-list"></div>
+  </div>
+</div>
+
+<div class="export-section" id="export-section" style="display:none">
+  <div class="export-title">Export Weekly Rankings</div>
+  <div class="export-sub">Downloads a CSV ready to import into your weekly Google Sheet</div>
+  <div style="display:flex;gap:10px;flex-wrap:wrap">
+    <button class="btn-green" onclick="exportCSV()">⬇ Download CSV</button>
+    <button class="btn-outline" onclick="resetMoves()">Reset All Moves</button>
+  </div>
+</div>
+
+<script>
+let allPlayers = []; // from last week's sheet
+let weekStats = {}; // player points from Sleeper
+let sleeperMap = {}; // name -> sleeper stats
+let currentFilter = 'all';
+let dragSrc = null;
+
+function parseCSV(row) {
+  const cols = []; let cur = '', inQ = false;
+  for (let i = 0; i < row.length; i++) {
+    const c = row[i];
+    if (c === '"') { inQ = !inQ; }
+    else if (c === ',' && !inQ) { cols.push(cur.trim()); cur = ''; }
+    else { cur += c; }
+  }
+  cols.push(cur.trim()); return cols;
+}
+
+async function loadData() {
+  const prevUrl = document.getElementById('prev-url').value.trim();
+  const week = document.getElementById('week-select').value;
+  if (!prevUrl) { alert('Please paste the previous week CSV URL'); return; }
+
+  const btn = document.getElementById('load-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>Loading...';
+
+  try {
+    // Load previous week rankings
+    const sheetRes = await fetch(prevUrl);
+    const sheetText = await sheetRes.text();
+    const rows = sheetText.trim().split('\n').slice(1);
+
+    // Detect columns — Name, Team, Position, Opponent, OppRank, PPR Rank, Half Rank, SF Rank, TEP Rank
+    allPlayers = rows.map((row, i) => {
+      const c = parseCSV(row);
+      return {
+        name:     c[0] || '',
+        team:     c[1] || '',
+        pos:      c[2] || '',
+        opp:      c[3] || '',
+        oppRank:  parseInt(c[4]) || null,
+        pprRank:  parseInt(c[5]) || null,
+        halfRank: parseInt(c[6]) || null,
+        sfRank:   parseInt(c[7]) || null,
+        tepRank:  parseInt(c[8]) || null,
+        weekRank: parseInt(c[5]) || (i + 1), // use PPR rank as weekly rank
+        pts:      null, // will fill from Sleeper
+        opp_new:  c[3] || '', // placeholder, user will update in sheet
+      };
+    }).filter(p => p.name && p.pprRank);
+
+    // Sort by PPR rank
+    allPlayers.sort((a, b) => a.pprRank - b.pprRank);
+
+    // Load Sleeper stats for that week
+    try {
+      const statsRes = await fetch(`https://api.sleeper.app/v1/stats/nfl/regular/2026/${week}`);
+      const rawStats = await statsRes.json();
+      
+      // Load player names
+      const playersRes = await fetch('https://api.sleeper.app/v1/players/nfl');
+      const sleeperPlayers = await playersRes.json();
+
+      // Build name -> pts map
+      const nameMap = {};
+      Object.entries(rawStats).forEach(([id, stats]) => {
+        const info = sleeperPlayers[id];
+        if (!info) return;
+        const pos = info.position;
+        if (!['QB','RB','WR','TE'].includes(pos)) return;
+        let pts = 0;
+        pts += (stats.pass_yd||0)*0.04 + (stats.pass_td||0)*4 - (stats.pass_int||0)*2;
+        pts += (stats.rush_yd||0)*0.1 + (stats.rush_td||0)*6;
+        pts += (stats.rec||0)*1 + (stats.rec_yd||0)*0.1 + (stats.rec_td||0)*6;
+        pts -= (stats.fum_lost||0)*2;
+        const name = `${info.first_name} ${info.last_name}`.toLowerCase();
+        nameMap[name] = parseFloat(pts.toFixed(1));
+      });
+
+      // Match to our players
+      allPlayers.forEach(p => {
+        p.pts = nameMap[p.name.toLowerCase()] || null;
+      });
+    } catch(e) {
+      console.log('Could not load Sleeper stats — may not be available yet');
+    }
+
+    document.getElementById('filter-bar').style.display = 'flex';
+    document.getElementById('columns').style.display = 'grid';
+    document.getElementById('export-section').style.display = 'block';
+    renderColumns();
+
+  } catch(e) {
+    console.error(e);
+    alert('Could not load sheet. Make sure the URL is a published CSV link.');
+  }
+
+  btn.disabled = false;
+  btn.textContent = 'Load';
+}
+
+function setFilter(f, el) {
+  currentFilter = f;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  renderColumns();
+}
+
+function getFilteredPlayers() {
+  const q = document.getElementById('search-bar')?.value.toLowerCase() || '';
+  let list = [...allPlayers];
+  if (currentFilter !== 'all') list = list.filter(p => p.pos === currentFilter);
+  if (q) list = list.filter(p => p.name.toLowerCase().includes(q) || p.team.toLowerCase().includes(q));
+  return list;
+}
+
+function getOppClass(rank) {
+  if (!rank) return '';
+  if (rank <= 8) return 'opp-easy';
+  if (rank <= 16) return 'opp-avg';
+  if (rank <= 24) return 'opp-hard';
+  return 'opp-tough';
+}
+
+function getPtsClass(pts) {
+  if (!pts) return '';
+  if (pts >= 20) return 'pts-good';
+  if (pts >= 10) return 'pts-avg';
+  return 'pts-bad';
+}
+
+function renderColumns() {
+  const filtered = getFilteredPlayers();
+
+  // Left column — last week reference
+  const refList = document.getElementById('ref-list');
+  refList.innerHTML = filtered.map((p, i) => `
+    <div class="ref-row">
+      <div class="ref-rank">${p.pprRank || i+1}</div>
+      <span class="pos-badge pos-${p.pos}">${p.pos}</span>
+      <div class="ref-name">${p.name}</div>
+      ${p.pts !== null ? `<div class="ref-pts ${getPtsClass(p.pts)}">${p.pts}pts</div>` : '<div class="ref-pts">—</div>'}
+    </div>`).join('');
+
+  // Right column — this week draggable
+  renderWeekList(filtered);
+}
+
+function renderWeekList(players) {
+  const weekList = document.getElementById('week-list');
+  weekList.innerHTML = players.map((p, i) => {
+    const origRank = p.pprRank || (i + 1);
+    const currentRank = p.weekRank || origRank;
+    const moved = currentRank < origRank ? 'moved-up' : currentRank > origRank ? 'moved-down' : '';
+    const oppClass = getOppClass(p.oppRank);
+
+    return `<div class="week-row ${moved}" 
+      draggable="true" 
+      data-name="${p.name.replace(/"/g,'&quot;')}"
+      ondragstart="dragStart(event)"
+      ondragover="dragOver(event)"
+      ondrop="drop(event)"
+      ondragend="dragEnd(event)">
+      <span class="drag-handle">⠿</span>
+      <div class="week-rank">${currentRank}</div>
+      <span class="pos-badge pos-${p.pos}">${p.pos}</span>
+      <div style="flex:1">
+        <div class="week-name">${p.name}</div>
+        <div class="week-team">${p.team}</div>
+      </div>
+      ${p.opp ? `<span class="opp-badge ${oppClass}">vs ${p.opp}</span>` : ''}
+      ${p.pts !== null ? `<span class="pts-badge ${getPtsClass(p.pts)}">${p.pts}pts</span>` : ''}
+    </div>`;
+  }).join('');
+
+  // Add drag events
+  setupDrag();
+}
+
+// ── DRAG AND DROP ──
+function setupDrag() {
+  const rows = document.querySelectorAll('.week-row');
+  rows.forEach(row => {
+    row.addEventListener('dragstart', dragStart);
+    row.addEventListener('dragover', dragOver);
+    row.addEventListener('drop', drop);
+    row.addEventListener('dragend', dragEnd);
+    row.addEventListener('dragleave', dragLeave);
+  });
+}
+
+function dragStart(e) {
+  dragSrc = e.currentTarget;
+  dragSrc.classList.add('dragging');
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/plain', dragSrc.dataset.name);
+}
+
+function dragOver(e) {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  document.querySelectorAll('.week-row').forEach(r => r.classList.remove('drag-over'));
+  e.currentTarget.classList.add('drag-over');
+}
+
+function dragLeave(e) {
+  e.currentTarget.classList.remove('drag-over');
+}
+
+function drop(e) {
+  e.preventDefault();
+  const target = e.currentTarget;
+  if (!dragSrc || dragSrc === target) return;
+
+  const srcName = e.dataTransfer.getData('text/plain');
+  const tgtName = target.dataset.name;
+
+  // Find indices in allPlayers
+  const srcIdx = allPlayers.findIndex(p => p.name === srcName);
+  const tgtIdx = allPlayers.findIndex(p => p.name === tgtName);
+  if (srcIdx < 0 || tgtIdx < 0) return;
+
+  // Reorder
+  const [moved] = allPlayers.splice(srcIdx, 1);
+  allPlayers.splice(tgtIdx, 0, moved);
+
+  // Recalculate weekRank for filtered position
+  const pos = currentFilter !== 'all' ? currentFilter : null;
+  let rank = 1;
+  allPlayers.forEach(p => {
+    if (!pos || p.pos === pos) {
+      p.weekRank = rank++;
+    }
+  });
+
+  document.querySelectorAll('.week-row').forEach(r => r.classList.remove('drag-over'));
+  renderColumns();
+}
+
+function dragEnd(e) {
+  document.querySelectorAll('.week-row').forEach(r => {
+    r.classList.remove('dragging');
+    r.classList.remove('drag-over');
+  });
+  dragSrc = null;
+}
+
+function resetMoves() {
+  allPlayers.forEach(p => { p.weekRank = p.pprRank; });
+  allPlayers.sort((a, b) => (a.pprRank || 999) - (b.pprRank || 999));
+  renderColumns();
+}
+
+function exportCSV() {
+  // Sort all players by their weekRank
+  const sorted = [...allPlayers].sort((a, b) => (a.weekRank || 999) - (b.weekRank || 999));
+  
+  const header = 'Name,Team,Position,Opponent,Opp Rank,PPR Rank,Half PPR Rank,SF Rank,TEP Rank';
+  const rows = sorted.map((p, i) => {
+    const rank = i + 1;
+    return `${p.name},${p.team},${p.pos},${p.opp || ''},${p.oppRank || ''},${rank},${rank},${rank},${rank}`;
+  });
+
+  const csv = [header, ...rows].join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `VF_Weekly_Rankings_Week${document.getElementById('week-select').value}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+</script>
+</body>
+</html>

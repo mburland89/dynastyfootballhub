@@ -99,7 +99,9 @@ a{text-decoration:none;color:inherit}
 .tp-name{font-size:14px;font-weight:600;color:#f0f0f0}
 .tp-meta{font-size:12px;color:#555}
 .tp-value{font-size:15px;font-weight:700;color:#aaa;white-space:nowrap}
-.tp-remove{background:none;border:none;color:#444;cursor:pointer;font-size:18px;line-height:1;padding:2px 6px;border-radius:4px;transition:color 0.15s}
+.depth-starter{font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;background:rgba(104,211,145,0.15);color:#68d391;margin-left:4px}
+.depth-fringe{font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;background:rgba(246,173,85,0.15);color:#f6ad55;margin-left:4px}
+.depth-waiver{font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;background:rgba(192,57,43,0.15);color:#e87c73;margin-left:4px}
 .tp-remove:hover{color:#e24b4a}
 .empty-side{text-align:center;color:#333;font-size:13px;padding:2rem 0}
 
@@ -181,6 +183,7 @@ a{text-decoration:none;color:inherit}
       <div class="nav-dropdown-menu">
         <a href="/#rankings">🏈 Dynasty Rankings</a>
         <a href="/redraft-rankings.html">📋 Redraft Rankings</a>
+        <a href="/weekly-rankings.html">📅 Weekly Rankings</a>
       </div>
     </div>
     <div class="nav-dropdown">
@@ -469,19 +472,70 @@ function renderCalcLeagues(leagues) {
 async function selectCalcLeague(leagueId, el) {
   document.querySelectorAll('.league-opt').forEach(e => e.classList.remove('selected'));
   el.classList.add('selected');
-  setCalcStatus('loading', 'Loading league settings & calculating values...');
+  setCalcStatus('loading', 'Loading league settings...');
   try {
     const res = await fetch(`https://api.sleeper.app/v1/league/${leagueId}`);
     selectedLeague = await res.json();
     leagueSettings = extractSettings(selectedLeague);
-    await calculateLeagueValues();
+    applyLeagueSettings();
     setCalcStatus('green', `Connected: ${selectedLeague.name}`);
     document.getElementById('calc-league-list').style.display = 'none';
     document.getElementById('calc-disconnect-btn').style.display = 'inline-flex';
-    setMode('league');
   } catch(e) {
     setCalcStatus('red', 'Could not load league. Try again.');
   }
+}
+
+function applyLeagueSettings() {
+  const sc = leagueSettings;
+  
+  // Auto-set scoring format
+  const isPPR = sc.rec >= 1;
+  const isHalf = sc.rec >= 0.4 && sc.rec < 1;
+  setRedraftSetting('sc', isHalf ? 'half' : 'ppr');
+  
+  // Auto-set QB format
+  setRedraftSetting('qb', sc.numSF > 0 ? 'sf' : '1qb');
+  
+  // Auto-set TEP
+  setRedraftSetting('tep', sc.bonus_rec_te > 0 ? 'tep1' : 'off');
+
+  // Calculate depth thresholds per position
+  // Total starters = mandatory + estimated flex allocation
+  const teams = sc.teams;
+  const flexRB = Math.round(sc.numFlex * 0.4);
+  const flexWR = Math.round(sc.numFlex * 0.5);
+  const flexTE = sc.numFlex - flexRB - flexWR;
+
+  window.depthThresholds = {
+    QB: (sc.numQB + sc.numSF) * teams,
+    RB: (sc.numRB + flexRB) * teams,
+    WR: (sc.numWR + flexWR) * teams,
+    TE: (sc.numTE + flexTE) * teams,
+  };
+
+  // Re-render trade to update depth labels
+  renderTrade();
+}
+
+function getDepthLabel(p) {
+  if (!window.depthThresholds || !leagueSettings) return null;
+  const rank = getPlayerValue(p) > 0 ? getRankForPlayer(p) : null;
+  if (!rank) return null;
+  const threshold = window.depthThresholds[p.pos] || 0;
+  if (rank <= threshold * 0.7) return { label: 'Starter', cls: 'depth-starter' };
+  if (rank <= threshold) return { label: 'Fringe', cls: 'depth-fringe' };
+  return { label: 'Waiver', cls: 'depth-waiver' };
+}
+
+function getRankForPlayer(p) {
+  // Get position rank based on current settings
+  const pos = p.pos;
+  const posPlayers = allPlayers
+    .filter(x => x.pos === pos)
+    .sort((a,b) => getPlayerValue(b) - getPlayerValue(a));
+  const idx = posPlayers.findIndex(x => x.name === p.name);
+  return idx >= 0 ? idx + 1 : null;
 }
 
 function extractSettings(l) {
@@ -503,90 +557,6 @@ function extractSettings(l) {
   };
 }
 
-async function calculateLeagueValues() {
-  // Fetch players and weekly stats
-  if (Object.keys(sleeperPlayers).length === 0) {
-    const res = await fetch('https://api.sleeper.app/v1/players/nfl');
-    sleeperPlayers = await res.json();
-  }
-  const weekPromises = [];
-  for (let w = 1; w <= 17; w++) {
-    weekPromises.push(fetch(`https://api.sleeper.app/v1/stats/nfl/regular/2025/${w}`).then(r=>r.json()).catch(()=>({})));
-  }
-  const allWeekStats = await Promise.all(weekPromises);
-  const playerSeasonStats = {};
-  const playerGP = {};
-  allWeekStats.forEach(weekData => {
-    if (!weekData || typeof weekData !== 'object') return;
-    Object.entries(weekData).forEach(([id, stats]) => {
-      if (!stats || typeof stats !== 'object') return;
-      if (!playerSeasonStats[id]) { playerSeasonStats[id] = {}; playerGP[id] = 0; }
-      playerGP[id]++;
-      Object.entries(stats).forEach(([k,v]) => { if (typeof v === 'number') playerSeasonStats[id][k] = (playerSeasonStats[id][k]||0)+v; });
-    });
-  });
-
-  const sc = leagueSettings;
-  const playerWAR = [];
-  Object.entries(playerSeasonStats).forEach(([id, stats]) => {
-    const info = sleeperPlayers[id];
-    if (!info) return;
-    const pos = info.position;
-    if (!['QB','RB','WR','TE'].includes(pos)) return;
-    let pts = 0;
-    pts += (stats.pass_yd||0)*sc.pass_yd + (stats.pass_td||0)*sc.pass_td - (stats.pass_int||0)*2;
-    pts += (stats.rush_yd||0)*sc.rush_yd + (stats.rush_td||0)*sc.rush_td + (stats.rush_att||0)*sc.rush_att;
-    pts += (stats.rec||0)*sc.rec + (stats.rec_yd||0)*sc.rec_yd + (stats.rec_td||0)*sc.rec_td;
-    if (pos==='WR') pts += (stats.rec||0)*sc.bonus_rec_wr;
-    if (pos==='TE') pts += (stats.rec||0)*sc.bonus_rec_te;
-    pts -= (stats.fum_lost||0)*2;
-    if (pts < 5) return;
-    playerWAR.push({ id, name:`${info.first_name} ${info.last_name}`, team:info.team||'FA', pos, pts:parseFloat(pts.toFixed(1)) });
-  });
-
-  // Replacement level
-  const byPos = {};
-  ['QB','RB','WR','TE'].forEach(pos => { byPos[pos] = playerWAR.filter(p=>p.pos===pos).sort((a,b)=>b.pts-a.pts); });
-  const mandatory = { QB:sc.numQB*sc.teams, RB:sc.numRB*sc.teams, WR:sc.numWR*sc.teams, TE:sc.numTE*sc.teams };
-  const flexPool = [];
-  ['RB','WR','TE'].forEach(pos => byPos[pos].slice(mandatory[pos]).forEach(p=>flexPool.push(p)));
-  flexPool.sort((a,b)=>b.pts-a.pts);
-  const flexC = {QB:0,RB:0,WR:0,TE:0};
-  flexPool.slice(0,sc.numFlex*sc.teams).forEach(p=>flexC[p.pos]++);
-  const sfPool = [];
-  byPos['QB'].slice(mandatory.QB).forEach(p=>sfPool.push({...p,_sfPos:'QB'}));
-  flexPool.slice(sc.numFlex*sc.teams).forEach(p=>sfPool.push({...p,_sfPos:p.pos}));
-  sfPool.sort((a,b)=>b.pts-a.pts);
-  const sfC = {QB:0,RB:0,WR:0,TE:0};
-  sfPool.slice(0,sc.numSF*sc.teams).forEach(p=>sfC[p._sfPos]++);
-  const totalS = { QB:mandatory.QB+sfC.QB, RB:mandatory.RB+flexC.RB+sfC.RB, WR:mandatory.WR+flexC.WR+sfC.WR, TE:mandatory.TE+flexC.TE+sfC.TE };
-  const repl = {};
-  ['QB','RB','WR','TE'].forEach(pos => {
-    const cut = totalS[pos];
-    const border = byPos[pos].slice(Math.max(0,cut-1),cut+3);
-    repl[pos] = border.length>0 ? border.reduce((s,p)=>s+p.pts,0)/border.length : 0;
-  });
-
-  // WAR and VF Score
-  playerWAR.forEach(p => { p.war = parseFloat(((p.pts-repl[p.pos])/10).toFixed(2)); });
-  const posStats = {};
-  ['QB','RB','WR','TE'].forEach(pos => {
-    const top50 = playerWAR.filter(p=>p.pos===pos&&p.war>0).sort((a,b)=>b.pts-a.pts).slice(0,50);
-    if (!top50.length) return;
-    const ratio = top50.map(p=>p.pts/(repl[pos]||1));
-    const mean = ratio.reduce((s,v)=>s+v,0)/ratio.length;
-    posStats[pos] = { mean, repl: repl[pos] };
-  });
-  playerWAR.forEach(p => {
-    const r = (repl[p.pos]||1);
-    const ratio = p.pts/r;
-    const maxRatio = Math.max(...playerWAR.filter(x=>x.pos===p.pos).map(x=>x.pts/r));
-    p.vfScore = parseFloat(Math.max(0,Math.min(100,(50+((ratio-1)/(maxRatio-1))*50))).toFixed(1));
-  });
-
-  leaguePlayers = playerWAR;
-  updateTrade();
-}
 
 function disconnectLeague() {
   selectedLeague = null; leagueSettings = null; leaguePlayers = [];
@@ -614,14 +584,15 @@ function searchPlayers(side) {
 
   if (!results.length) { dropdown.style.display = 'none'; return; }
 
-  const val = getValueLabel();
   dropdown.innerHTML = results.map(p => {
     const v = getPlayerValue(p);
+    const depth = getDepthLabel(p);
+    const depthHtml = depth ? `<span class="${depth.cls}" style="margin-left:6px">${depth.label}</span>` : '';
     return `<div class="search-result" onmousedown="addPlayer('${side}','${p.name.replace(/'/g,"\\'")}')">
       <div class="sr-left">
         <span class="pos-badge pos-${p.pos}">${p.pos}</span>
         <div>
-          <div class="sr-name">${p.name}</div>
+          <div class="sr-name">${p.name}${depthHtml}</div>
           <div class="sr-team">${p.team || '—'}</div>
         </div>
       </div>
@@ -667,11 +638,13 @@ function renderSide(side, players) {
   }
   container.innerHTML = players.map(p => {
     const v = getPlayerValue(p);
+    const depth = getDepthLabel(p);
+    const depthHtml = depth ? `<span class="${depth.cls}">${depth.label}</span>` : '';
     return `<div class="trade-player">
       <div class="tp-left">
         <span class="pos-badge pos-${p.pos}">${p.pos}</span>
         <div class="tp-info">
-          <div class="tp-name">${p.name}</div>
+          <div class="tp-name">${p.name}${depthHtml}</div>
           <div class="tp-meta">${p.team || '—'} ${p.age ? '· Age '+p.age : ''}</div>
         </div>
       </div>

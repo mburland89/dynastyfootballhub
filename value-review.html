@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>VF Value Review | Private</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#0a0a0a;color:#f0f0f0;min-height:100vh;padding:2rem}
+h1{font-size:24px;font-weight:800;color:#fff;margin-bottom:0.3rem}
+.sub{font-size:14px;color:#555;margin-bottom:2rem}
+.sub span{color:#c0392b}
+
+.controls{display:flex;gap:1rem;align-items:center;margin-bottom:1.5rem;flex-wrap:wrap}
+.select{background:#161616;border:1px solid #2a2a2a;border-radius:7px;padding:10px 14px;font-size:14px;color:#f0f0f0;outline:none;font-family:inherit;cursor:pointer}
+.btn{background:#c0392b;color:#fff;padding:10px 20px;border-radius:7px;font-size:14px;font-weight:600;border:none;cursor:pointer}
+.btn:disabled{opacity:0.4;cursor:not-allowed}
+.btn-outline{background:transparent;border:1px solid #2a2a2a;color:#888;padding:10px 20px;border-radius:7px;font-size:14px;font-weight:600;cursor:pointer}
+
+.stats{display:flex;gap:1rem;margin-bottom:1.5rem;flex-wrap:wrap}
+.stat-card{background:#161616;border:1px solid #1e1e1e;border-radius:8px;padding:1rem 1.5rem;flex:1;min-width:140px}
+.stat-num{font-size:28px;font-weight:800}
+.stat-num.up{color:#68d391}
+.stat-num.down{color:#e24b4a}
+.stat-num.neutral{color:#f6ad55}
+.stat-label{font-size:12px;color:#555;margin-top:3px}
+
+.filter-bar{display:flex;gap:8px;margin-bottom:1rem;flex-wrap:wrap}
+.filter-btn{padding:6px 14px;border-radius:6px;border:1px solid #2a2a2a;background:#161616;color:#555;font-size:12px;font-weight:600;cursor:pointer}
+.filter-btn.active{border-color:#c0392b;color:#e87c73;background:rgba(192,57,43,0.1)}
+
+.table{border-radius:10px;overflow:hidden;border:1px solid #1e1e1e}
+.table-head{display:grid;grid-template-columns:1fr 60px 80px 80px 90px 110px 100px;padding:9px 16px;background:#181818;border-bottom:1px solid #1e1e1e}
+.table-head span{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.7px;color:#444;cursor:pointer}
+.table-head span:hover{color:#888}
+.table-head span:nth-child(n+2){text-align:center}
+.table-row{display:grid;grid-template-columns:1fr 60px 80px 80px 90px 110px 100px;padding:11px 16px;border-bottom:1px solid #111;align-items:center}
+.table-row:last-child{border-bottom:none}
+.table-row:hover{background:#0d0d0d}
+.player-name{font-size:14px;font-weight:600;color:#f0f0f0}
+.player-team{font-size:12px;color:#444}
+.cell{text-align:center;font-size:13px}
+.cell.pts{color:#aaa}
+.cell.val{color:#666}
+
+.change{font-size:13px;font-weight:700;text-align:center}
+.change.big-up{color:#68d391}
+.change.small-up{color:#a8d5b5}
+.change.neutral{color:#555}
+.change.small-down{color:#e8a07a}
+.change.big-down{color:#e24b4a}
+
+.suggestion{font-size:11px;font-weight:600;padding:3px 8px;border-radius:4px;text-align:center;white-space:nowrap}
+.sug-up{background:rgba(104,211,145,0.15);color:#68d391}
+.sug-down{background:rgba(192,57,43,0.15);color:#e87c73}
+.sug-hold{background:#1a1a1a;color:#555}
+.sug-watch{background:rgba(246,173,85,0.15);color:#f6ad55}
+
+.pos-badge{font-size:10px;font-weight:700;padding:2px 6px;border-radius:3px;display:inline-block}
+.pos-QB{background:rgba(99,179,237,0.12);color:#63b3ed}
+.pos-RB{background:rgba(104,211,145,0.12);color:#68d391}
+.pos-WR{background:rgba(246,173,85,0.12);color:#f6ad55}
+.pos-TE{background:rgba(192,57,43,0.18);color:#e87c73}
+
+.empty{padding:3rem;text-align:center;color:#333;font-size:14px}
+.loading{padding:3rem;text-align:center;color:#555;font-size:14px}
+.spinner{display:inline-block;width:20px;height:20px;border:2px solid #333;border-top-color:#c0392b;border-radius:50%;animation:spin 0.8s linear infinite;margin-right:8px;vertical-align:middle}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.note{background:#111;border:1px solid #1e1e1e;border-radius:8px;padding:1rem;font-size:12px;color:#555;margin-bottom:1.5rem;line-height:1.6}
+.note strong{color:#888}
+</style>
+</head>
+<body>
+
+<h1>⚙️ VF Value Review <span style="font-size:14px;color:#c0392b;font-weight:400">— Private</span></h1>
+<div class="sub">Compare weekly fantasy performance vs current redraft values. <span>For your eyes only.</span></div>
+
+<div class="note">
+  <strong>How to use:</strong> Select a week, click Load. The tool pulls actual fantasy points from Sleeper and compares to your current PPR values in the redraft sheet. 
+  Use the suggestions as a guide — one bad week doesn't mean dropping a player. Look for trends over 2-3 weeks before adjusting.
+  <br><br><strong>Suggestion logic:</strong> Monitor = small sample / 1 week. Consider = consistent trend forming. Hold = performing as expected.
+</div>
+
+<div class="controls">
+  <select class="select" id="week-select">
+    <option value="1">Week 1</option>
+    <option value="2">Week 2</option>
+    <option value="3">Week 3</option>
+    <option value="4">Week 4</option>
+    <option value="5">Week 5</option>
+    <option value="6">Week 6</option>
+    <option value="7">Week 7</option>
+    <option value="8">Week 8</option>
+    <option value="9">Week 9</option>
+    <option value="10">Week 10</option>
+    <option value="11">Week 11</option>
+    <option value="12">Week 12</option>
+    <option value="13">Week 13</option>
+    <option value="14">Week 14</option>
+    <option value="15">Week 15</option>
+    <option value="16">Week 16</option>
+    <option value="17">Week 17</option>
+  </select>
+  <button class="btn" id="load-btn" onclick="loadData()">Load Week</button>
+  <button class="btn-outline" onclick="sortBy('change')">Sort by Change</button>
+  <button class="btn-outline" onclick="sortBy('pts')">Sort by Points</button>
+</div>
+
+<div class="stats" id="stats" style="display:none">
+  <div class="stat-card"><div class="stat-num up" id="stat-up">—</div><div class="stat-label">Consider Raising</div></div>
+  <div class="stat-card"><div class="stat-num down" id="stat-down">—</div><div class="stat-label">Consider Dropping</div></div>
+  <div class="stat-card"><div class="stat-num neutral" id="stat-watch">—</div><div class="stat-label">Monitor</div></div>
+  <div class="stat-card"><div class="stat-num" style="color:#555" id="stat-hold">—</div><div class="stat-label">Hold</div></div>
+</div>
+
+<div class="filter-bar" id="filter-bar" style="display:none">
+  <div class="filter-btn active" onclick="setFilter('all',this)">All</div>
+  <div class="filter-btn" onclick="setFilter('up',this)">Consider Raising</div>
+  <div class="filter-btn" onclick="setFilter('down',this)">Consider Dropping</div>
+  <div class="filter-btn" onclick="setFilter('watch',this)">Monitor</div>
+  <div class="filter-btn" onclick="setFilter('QB',this)">QB</div>
+  <div class="filter-btn" onclick="setFilter('RB',this)">RB</div>
+  <div class="filter-btn" onclick="setFilter('WR',this)">WR</div>
+  <div class="filter-btn" onclick="setFilter('TE',this)">TE</div>
+</div>
+
+<div class="table" id="table">
+  <div class="empty">Select a week and click Load to see performance data</div>
+</div>
+
+<script>
+const REDRAFT_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTDcNHsV873O9Hemm3exidJoc1GwwBQM286lZ3V1EY02SrdcdG5ke9g8WFJ_9VBthuOEpAVxgoWZn5H/pub?gid=0&single=true&output=csv';
+
+let allData = [];
+let currentFilter = 'all';
+let currentSort = 'change';
+
+function parseCSV(row) {
+  const cols = []; let cur = '', inQ = false;
+  for (let i = 0; i < row.length; i++) {
+    const c = row[i];
+    if (c === '"') { inQ = !inQ; }
+    else if (c === ',' && !inQ) { cols.push(cur.trim()); cur = ''; }
+    else { cur += c; }
+  }
+  cols.push(cur.trim()); return cols;
+}
+
+async function loadData() {
+  const week = document.getElementById('week-select').value;
+  const btn = document.getElementById('load-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>Loading...';
+  document.getElementById('table').innerHTML = '<div class="loading"><span class="spinner"></span>Fetching stats and values...</div>';
+
+  try {
+    // Load redraft values
+    const sheetRes = await fetch(REDRAFT_URL);
+    const sheetText = await sheetRes.text();
+    const sheetRows = sheetText.trim().split('\n').slice(1);
+    const valueMap = {};
+    sheetRows.forEach(row => {
+      const c = parseCSV(row);
+      if (c[0]) valueMap[c[0].toLowerCase()] = {
+        name: c[0], team: c[1], pos: c[2],
+        pprValue: parseInt(c[3]) || 0,
+      };
+    });
+
+    // Load weekly stats from Sleeper
+    const statsRes = await fetch(`https://api.sleeper.app/v1/stats/nfl/regular/2026/${week}`);
+    const stats = await statsRes.json();
+
+    // Build comparison data
+    allData = [];
+    for (const [playerId, playerStats] of Object.entries(stats)) {
+      // Calculate PPR points
+      let pts = 0;
+      pts += (playerStats.pass_yd || 0) * 0.04;
+      pts += (playerStats.pass_td || 0) * 4;
+      pts -= (playerStats.pass_int || 0) * 2;
+      pts += (playerStats.rush_yd || 0) * 0.1;
+      pts += (playerStats.rush_td || 0) * 6;
+      pts += (playerStats.rec || 0) * 1; // PPR
+      pts += (playerStats.rec_yd || 0) * 0.1;
+      pts += (playerStats.rec_td || 0) * 6;
+      pts -= (playerStats.fum_lost || 0) * 2;
+      pts = parseFloat(pts.toFixed(1));
+
+      if (pts < 3) continue;
+
+      // Try to match to our redraft sheet
+      // We need player names — use a lookup approach
+      // Store by player_id for now, we'll match by name later
+      allData.push({ playerId, pts, stats: playerStats });
+    }
+
+    // Now load Sleeper players to get names
+    const playersRes = await fetch('https://api.sleeper.app/v1/players/nfl');
+    const sleeperPlayers = await playersRes.json();
+
+    // Build final comparison
+    const finalData = [];
+    allData.forEach(({ playerId, pts, stats }) => {
+      const info = sleeperPlayers[playerId];
+      if (!info) return;
+      const pos = info.position;
+      if (!['QB','RB','WR','TE'].includes(pos)) return;
+      const name = `${info.first_name} ${info.last_name}`;
+      const valueData = valueMap[name.toLowerCase()];
+      if (!valueData || !valueData.pprValue) return;
+
+      const currentValue = valueData.pprValue;
+      // Expected points based on value (rough benchmark: 9999 = ~35pts, 5000 = ~18pts, 1000 = ~5pts)
+      const expectedPts = (currentValue / 9999) * 35;
+      const diff = pts - expectedPts;
+      const diffPct = Math.round((diff / expectedPts) * 100);
+
+      // Suggestion logic
+      let suggestion, sugClass;
+      if (Math.abs(diffPct) <= 15) {
+        suggestion = 'Hold'; sugClass = 'sug-hold';
+      } else if (diffPct > 50) {
+        suggestion = 'Consider ↑'; sugClass = 'sug-up';
+      } else if (diffPct > 15) {
+        suggestion = 'Monitor ↑'; sugClass = 'sug-watch';
+      } else if (diffPct < -50) {
+        suggestion = 'Consider ↓'; sugClass = 'sug-down';
+      } else {
+        suggestion = 'Monitor ↓'; sugClass = 'sug-watch';
+      }
+
+      finalData.push({
+        name, pos, team: info.team || valueData.team,
+        pts, currentValue, expectedPts: parseFloat(expectedPts.toFixed(1)),
+        diff: parseFloat(diff.toFixed(1)), diffPct,
+        suggestion, sugClass,
+        stats,
+      });
+    });
+
+    allData = finalData.sort((a,b) => Math.abs(b.diffPct) - Math.abs(a.diffPct));
+
+    // Update stats
+    const up = allData.filter(p => p.suggestion.includes('↑')).length;
+    const down = allData.filter(p => p.suggestion.includes('↓') && !p.suggestion.includes('Monitor')).length;
+    const watch = allData.filter(p => p.suggestion.includes('Monitor')).length;
+    const hold = allData.filter(p => p.suggestion === 'Hold').length;
+    document.getElementById('stat-up').textContent = up;
+    document.getElementById('stat-down').textContent = down;
+    document.getElementById('stat-watch').textContent = watch;
+    document.getElementById('stat-hold').textContent = hold;
+    document.getElementById('stats').style.display = 'flex';
+    document.getElementById('filter-bar').style.display = 'flex';
+
+    renderTable();
+  } catch(e) {
+    console.error(e);
+    document.getElementById('table').innerHTML = '<div class="empty">Could not load data. Week stats may not be available yet.</div>';
+  }
+
+  btn.disabled = false;
+  btn.textContent = 'Load Week';
+}
+
+function setFilter(f, el) {
+  currentFilter = f;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  renderTable();
+}
+
+function sortBy(col) {
+  currentSort = col;
+  if (col === 'pts') allData.sort((a,b) => b.pts - a.pts);
+  if (col === 'change') allData.sort((a,b) => Math.abs(b.diffPct) - Math.abs(a.diffPct));
+  renderTable();
+}
+
+function renderTable() {
+  let data = [...allData];
+
+  if (currentFilter === 'up') data = data.filter(p => p.suggestion.includes('↑'));
+  else if (currentFilter === 'down') data = data.filter(p => p.suggestion.includes('↓'));
+  else if (currentFilter === 'watch') data = data.filter(p => p.suggestion.includes('Monitor'));
+  else if (['QB','RB','WR','TE'].includes(currentFilter)) data = data.filter(p => p.pos === currentFilter);
+
+  if (!data.length) {
+    document.getElementById('table').innerHTML = '<div class="empty">No players match this filter</div>';
+    return;
+  }
+
+  let html = `<div class="table-head">
+    <span>Player</span>
+    <span>Pos</span>
+    <span onclick="sortBy('pts')" style="cursor:pointer">Pts ↕</span>
+    <span>Expected</span>
+    <span onclick="sortBy('change')" style="cursor:pointer">Diff ↕</span>
+    <span>Current Value</span>
+    <span>Suggestion</span>
+  </div>`;
+
+  data.forEach(p => {
+    const changeClass = p.diffPct > 30 ? 'big-up' : p.diffPct > 10 ? 'small-up' :
+                        p.diffPct < -30 ? 'big-down' : p.diffPct < -10 ? 'small-down' : 'neutral';
+    const sign = p.diff > 0 ? '+' : '';
+
+    html += `<div class="table-row">
+      <div>
+        <div class="player-name">${p.name}</div>
+        <div class="player-team">${p.team}</div>
+      </div>
+      <div class="cell"><span class="pos-badge pos-${p.pos}">${p.pos}</span></div>
+      <div class="cell pts">${p.pts}</div>
+      <div class="cell" style="color:#444">${p.expectedPts}</div>
+      <div class="change ${changeClass}">${sign}${p.diff} (${sign}${p.diffPct}%)</div>
+      <div class="cell val">${p.currentValue.toLocaleString()}</div>
+      <div><span class="suggestion ${p.sugClass}">${p.suggestion}</span></div>
+    </div>`;
+  });
+
+  document.getElementById('table').innerHTML = html;
+}
+</script>
+</body>
+</html>

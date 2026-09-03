@@ -268,7 +268,7 @@ onAuthStateChanged(auth, async (user) => {
     document.getElementById('auth-nav-link').textContent = 'My Account';
 
     // Check subscription tier
-    const ref = doc(db, 'users', user.uid);
+    const ref = doc(db, 'Users', user.uid);
     const snap = await getDoc(ref);
     const data = snap.data() || {};
     currentTier = data.tier || 'free';

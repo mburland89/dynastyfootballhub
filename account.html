@@ -169,7 +169,7 @@ onAuthStateChanged(auth, async (user) => {
     document.getElementById('success-banner').style.display = 'block';
   }
 
-  const ref = doc(db, 'users', user.uid);
+  const ref = doc(db, 'Users', user.uid);
   const snap = await getDoc(ref);
   const data = snap.data() || {};
   const tier = data.tier || 'free';
